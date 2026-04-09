@@ -4,13 +4,15 @@ extends Control
 @onready var container = $HBoxContainer
 @onready var command_input = $CommandInput
 
+var drag_script = preload("res://scripts/DraggableSlot.gd")
+
 func _ready():
 	Inventory.inventory_changed.connect(refresh_ui)
-	
+
 	if command_input:
 		command_input.visible = false
 		command_input.text_submitted.connect(_on_command_submitted)
-		
+
 	refresh_ui()
 
 func _unhandled_input(event):
@@ -26,42 +28,46 @@ func _unhandled_input(event):
 					get_viewport().set_input_as_handled()
 
 func _on_command_submitted(text: String):
-	print("Command entered from Hotbar: ", text)
-	
-	# Send the command to the AI NPC
 	var npcs = get_tree().get_nodes_in_group("npc")
 	for npc in npcs:
 		if npc.has_method("receive_command"):
 			npc.receive_command(text)
-	
+
 	if command_input:
 		command_input.text = ""
 		command_input.visible = false
 		command_input.release_focus()
 
+# --- Build UI ---
+
 func refresh_ui():
-	# Clear existing slots
 	for child in container.get_children():
 		child.queue_free()
-	
+
 	var items = Inventory.get_items()
-	
-	# Create 10 slots (fixed size for hotbar)
+
 	for i in range(10):
 		var slot = slot_scene.instantiate()
-		container.add_child(slot)
-		
-		var icon_rect = slot.get_node("Icon")
-		var count_label = slot.get_node("CountLabel")
-		
+		# All slots get the drag script (so they can accept drops too)
+		slot.set_script(drag_script)
+		slot.set_meta("source", "player")
+
 		if i < items.size():
 			var entry = items[i]
-			var item = entry.item
-			var quantity = entry.quantity
-			
-			if item.icon:
-				icon_rect.texture = item.icon
-			count_label.text = str(quantity) if quantity > 1 else ""
+			slot.set_meta("item_id", entry.item.id)
+		else:
+			slot.set_meta("item_id", "")
+
+		container.add_child(slot)
+
+		var icon_rect = slot.get_node("Icon")
+		var count_label = slot.get_node("CountLabel")
+
+		if i < items.size():
+			var entry = items[i]
+			if entry.item.icon:
+				icon_rect.texture = entry.item.icon
+			count_label.text = str(entry.quantity) if entry.quantity > 1 else ""
 		else:
 			icon_rect.texture = null
 			count_label.text = ""

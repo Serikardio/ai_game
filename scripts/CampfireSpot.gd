@@ -22,10 +22,7 @@ func _process(_delta):
 		try_build(overlapping_player)
 
 func _on_body_entered(body):
-	if body.is_in_group("npc"):
-		# NPCs still build automatically on proximity
-		try_build(body)
-	elif body.is_in_group("player"):
+	if body.is_in_group("player"):
 		overlapping_player = body
 		# Show hint for player
 		prompt_label.text = "Нажми E чтобы построить"

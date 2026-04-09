@@ -27,6 +27,12 @@ const DAMAGE = 10
 signal started_attacking(direction)
 signal tree_hit(tree)
 
+var _wants_attack: bool = false
+
+func _unhandled_input(event):
+	if event.is_action_pressed("Attack") and not is_attacking:
+		_wants_attack = true
+
 func _ready():
 	add_to_group("player")
 	hitbox.area_entered.connect(_on_hitbox_area_entered)
@@ -58,8 +64,9 @@ func _physics_process(delta):
 	if Input.is_action_pressed("Right"):
 		dir.x += 1
 
-	# атака
-	if Input.is_action_just_pressed("Attack") and !is_attacking:
+	# атака (обрабатывается в _unhandled_input)
+	if _wants_attack and !is_attacking:
+		_wants_attack = false
 		start_attack()
 		return
 

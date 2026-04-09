@@ -59,21 +59,26 @@ func _drop_items_deferred(spawn_pos):
 		var wood = WOOD_SCENE.instantiate()
 		parent.add_child(wood)
 		
-		# Начальная позиция — в центре дерева, масштаб 0
 		wood.global_position = spawn_pos
-		wood.scale = Vector2.ZERO
-		
-		# Конечная позиция с разлётом
-		var offset = Vector2(randf_range(-30, 30), randf_range(-20, 20))
-		var target_pos = spawn_pos + offset
-		
-		# Анимация разлёта через Tween
+		wood.scale = Vector2.ONE
+
+		var land_offset = Vector2(randf_range(-50, 50), randf_range(-10, 30))
+		var land_pos = spawn_pos + land_offset
+		var jump_height = randf_range(20, 35)
+
 		var tween = wood.create_tween()
-		tween.set_parallel(true)
-		
-		# Масштаб: 0 -> 1.3 -> 1.0 (эффект резкого появления с отпружиниванием)
-		tween.tween_property(wood, "scale", Vector2(1.3, 1.3), 0.2).set_ease(Tween.EASE_OUT)
-		tween.tween_property(wood, "scale", Vector2.ONE, 0.15).set_delay(0.2)
-		
-		# Позиция: летит в сторону
-		tween.tween_property(wood, "global_position", target_pos, 0.3).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+		# Прыжок 1: дуга до точки приземления
+		tween.tween_method(func(t: float):
+			var pos = spawn_pos.lerp(land_pos, t)
+			pos.y -= sin(t * PI) * jump_height
+			wood.global_position = pos
+		, 0.0, 1.0, 0.3).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
+
+		# Прыжок 2: маленький отскок
+		var bounce_offset = Vector2(randf_range(-10, 10), randf_range(-5, 5))
+		var bounce_pos = land_pos + bounce_offset
+		tween.tween_method(func(t: float):
+			var pos = land_pos.lerp(bounce_pos, t)
+			pos.y -= sin(t * PI) * jump_height * 0.3
+			wood.global_position = pos
+		, 0.0, 1.0, 0.2).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)

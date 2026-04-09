@@ -39,3 +39,8 @@ func get_item_count(item_id: String) -> int:
 	if items.has(item_id):
 		return items[item_id].quantity
 	return 0
+
+func get_item(item_id: String) -> Item:
+	if items.has(item_id):
+		return items[item_id].item
+	return null
