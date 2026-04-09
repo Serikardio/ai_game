@@ -3,6 +3,9 @@ extends Node2D
 @onready var animP = $AnimationPlayer
 
 func _ready():
+	# Y-sort so characters hide behind trees correctly
+	y_sort_enabled = true
+
 	# Add world drop zone (catches items dragged outside any hotbar)
 	var drop_layer = CanvasLayer.new()
 	drop_layer.name = "WorldDropZoneLayer"
