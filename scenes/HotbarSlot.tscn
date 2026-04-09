@@ -1,0 +1,20 @@
+[gd_scene load_steps=2 format=3 uid="uid://b6m2n3p4q5r6s"]
+
+[node name="HotbarSlot" type="PanelContainer"]
+custom_minimum_size = Vector2(64, 64)
+offset_right = 64.0
+offset_bottom = 64.0
+
+[node name="Icon" type="TextureRect" parent="."]
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="CountLabel" type="Label" parent="."]
+layout_mode = 2
+size_flags_vertical = 8
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 2
+vertical_alignment = 2

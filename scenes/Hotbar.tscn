@@ -1,0 +1,57 @@
+[gd_scene load_steps=3 format=3 uid="uid://c5k4j3h2g1f0e"]
+
+[ext_resource type="Script" path="res://scripts/HotbarUI.gd" id="1_script"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_command"]
+bg_color = Color(0.1, 0.1, 0.1, 0.8)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="Hotbar" type="CanvasLayer"]
+
+[node name="HotbarUI" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("1_script")
+
+[node name="CommandInput" type="LineEdit" parent="HotbarUI"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -320.0
+offset_top = -120.0
+offset_right = 320.0
+offset_bottom = -89.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_styles/focus = SubResource("StyleBoxFlat_command")
+theme_override_styles/normal = SubResource("StyleBoxFlat_command")
+placeholder_text = "Введите команду..."
+visible = false
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HotbarUI"]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -320.0
+offset_top = -80.0
+offset_right = 320.0
+offset_bottom = -16.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 8
+alignment = 1

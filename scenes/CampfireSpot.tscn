@@ -1,0 +1,48 @@
+[gd_scene load_steps=5 format=3 uid="uid://0p5oxajl4esb"]
+
+[ext_resource type="Script" uid="uid://cirhuo5sgkw55" path="res://scripts/CampfireSpot.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://dcttp4ek10uk0" path="res://assets/sprites/TestMap/Wood_v3.png" id="2_woodicon"]
+[ext_resource type="Script" uid="uid://bx2ydqxfttle4" path="res://scripts/CornerFrame.gd" id="3_frame"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_c12xp"]
+size = Vector2(40, 40)
+
+[node name="CampfireSpot" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+shape = SubResource("RectangleShape2D_c12xp")
+
+[node name="Frame" type="Node2D" parent="."]
+script = ExtResource("3_frame")
+
+[node name="WoodIcon" type="Sprite2D" parent="."]
+position = Vector2(1, -3)
+scale = Vector2(0.940694, 1.32403)
+texture = ExtResource("2_woodicon")
+
+[node name="CountLabel" type="Label" parent="."]
+offset_left = -4.0
+offset_top = 3.0
+offset_right = 8.0
+offset_bottom = 17.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 10
+text = "x2"
+horizontal_alignment = 1
+
+[node name="Prompt" type="Label" parent="."]
+visible = false
+offset_left = -60.0
+offset_top = -40.0
+offset_right = 60.0
+offset_bottom = -20.0
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 3
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1

@@ -1,0 +1,120 @@
+[gd_scene load_steps=17 format=3 uid="uid://bccxka3j0nulw"]
+
+[ext_resource type="Texture2D" uid="uid://bkl4h07al4crb" path="res://assets/sprites/someStaff/Sprite-sheet-campfire.png" id="1_w7mda"]
+[ext_resource type="Script" uid="uid://bdoj37qpuuoig" path="res://animated_sprite_2d.gd" id="2_hxy6q"]
+[ext_resource type="Texture2D" uid="uid://dnrfer74i4wof" path="res://assets/sprites/TestMap/circle.png" id="3_okir6"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_hxy6q"]
+atlas = ExtResource("1_w7mda")
+region = Rect2(0, 0, 640, 640)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_okir6"]
+atlas = ExtResource("1_w7mda")
+region = Rect2(640, 0, 640, 640)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ckl0q"]
+atlas = ExtResource("1_w7mda")
+region = Rect2(1280, 0, 640, 640)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yk2bx"]
+atlas = ExtResource("1_w7mda")
+region = Rect2(1920, 0, 640, 640)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ydwnu"]
+atlas = ExtResource("1_w7mda")
+region = Rect2(2560, 0, 640, 640)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_w2k0s"]
+atlas = ExtResource("1_w7mda")
+region = Rect2(3200, 0, 640, 640)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_c670w"]
+atlas = ExtResource("1_w7mda")
+region = Rect2(3840, 0, 640, 640)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_gelkq"]
+atlas = ExtResource("1_w7mda")
+region = Rect2(4480, 0, 640, 640)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_5afdv"]
+atlas = ExtResource("1_w7mda")
+region = Rect2(5120, 0, 640, 640)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_3y62o"]
+atlas = ExtResource("1_w7mda")
+region = Rect2(5760, 0, 640, 640)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_lnjp3"]
+atlas = ExtResource("1_w7mda")
+region = Rect2(6400, 0, 640, 640)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_5btrc"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_hxy6q")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_okir6")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ckl0q")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_yk2bx")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ydwnu")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_w2k0s")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_c670w")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_gelkq")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_5afdv")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_3y62o")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_lnjp3")
+}],
+"loop": true,
+"name": &"default",
+"speed": 6.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_i1504"]
+size = Vector2(19, 6)
+
+[node name="CampFire" type="Node2D"]
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+position = Vector2(4.76837e-07, -4.76837e-07)
+scale = Vector2(0.0800781, 0.0699219)
+sprite_frames = SubResource("SpriteFrames_5btrc")
+frame_progress = 0.64178
+script = ExtResource("2_hxy6q")
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+position = Vector2(0.5, 9)
+shape = SubResource("RectangleShape2D_i1504")
+
+[node name="StaticBody2D" type="StaticBody2D" parent="."]
+
+[node name="CollisionShape2D2" type="CollisionShape2D" parent="StaticBody2D"]
+position = Vector2(0.5, 9)
+shape = SubResource("RectangleShape2D_i1504")
+
+[node name="PointLight2D" type="PointLight2D" parent="."]
+position = Vector2(0, 5.2773)
+scale = Vector2(0.0775, 0.0681932)
+color = Color(0.968627, 0.462745, 0.133333, 1)
+texture = ExtResource("3_okir6")
