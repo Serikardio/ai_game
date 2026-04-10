@@ -6,17 +6,16 @@ extends PanelContainer
 func _get_drag_data(_at_position):
 	var item_id = get_meta("item_id", "")
 	var source = get_meta("source", "")
+	var slot_index = get_meta("slot_index", -1)
 	if item_id == "":
 		return null
 
-	# Get full stack quantity
-	var total = 0
-	if source == "player":
-		total = Inventory.get_item_count(item_id)
-	elif source == "npc":
-		total = NPCInventory.get_item_count(item_id)
+	var inv = Inventory if source == "player" else NPCInventory
+	var slot_data = inv.get_slot(slot_index)
+	if not slot_data:
+		return null
 
-	# Ctrl = half stack
+	var total = slot_data.quantity
 	var quantity = total
 	if Input.is_key_pressed(KEY_CTRL):
 		quantity = ceili(total / 2.0)
@@ -36,35 +35,37 @@ func _get_drag_data(_at_position):
 	if zones.size() > 0:
 		zones[0].activate()
 
-	return {"item_id": item_id, "source": source, "quantity": quantity}
+	return {"item_id": item_id, "source": source, "quantity": quantity, "slot_index": slot_index}
 
-# Accept drops from the OPPOSITE inventory
 func _can_drop_data(_at_position, data):
 	if not (data is Dictionary and data.has("item_id")):
 		return false
-	var my_source = get_meta("source", "")
-	var drag_source = data.get("source", "")
-	return my_source != "" and drag_source != "" and my_source != drag_source
+	return true
 
 func _drop_data(_at_position, data):
 	var item_id = data.get("item_id", "")
 	var drag_source = data.get("source", "")
 	var quantity = data.get("quantity", 1)
+	var from_slot = data.get("slot_index", -1)
+	var my_source = get_meta("source", "")
+	var to_slot = get_meta("slot_index", -1)
 	if item_id == "":
 		return
 
-	if drag_source == "npc":
-		var item = NPCInventory.get_item(item_id)
-		if item:
-			NPCInventory.remove_item(item_id, quantity)
-			for i in range(quantity):
-				Inventory.add_item(item)
-	elif drag_source == "player":
-		var item = Inventory.get_item(item_id)
-		if item:
-			Inventory.remove_item(item_id, quantity)
-			for i in range(quantity):
-				NPCInventory.add_item(item)
+	# Same inventory — swap slots
+	if drag_source == my_source:
+		var inv = Inventory if my_source == "player" else NPCInventory
+		inv.swap_slots(from_slot, to_slot)
+		return
+
+	# Different inventories — transfer
+	var from_inv = Inventory if drag_source == "player" else NPCInventory
+	var to_inv = NPCInventory if drag_source == "player" else Inventory
+	var item = from_inv.get_item(item_id)
+	if item:
+		from_inv.remove_item(item_id, quantity)
+		for i in range(quantity):
+			to_inv.add_item(item, to_slot)
 
 func _notification(what):
 	if what == NOTIFICATION_DRAG_END:

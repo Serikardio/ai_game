@@ -439,6 +439,10 @@ func _play_idle_animation():
 		DOWN_LEFT:  anim.play("Idle_down_left")
 		DOWN_RIGHT: anim.play("Idle_down_right")
 
+func needs_pickup() -> bool:
+	return pending_gather_id != "" or pending_recipe != ""
+
+
 func show_chat_message(text: String, duration: float = 3.0):
 	chat_label.add_theme_color_override("font_color", Color.WHITE)
 	chat_label.scale = Vector2(0.25, 0.25)

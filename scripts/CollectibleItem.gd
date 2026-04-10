@@ -7,6 +7,7 @@ var prompt_label: Control
 var _bob_time: float = 0.0
 var _sprite: Node2D = null
 var _sprite_base_y: float = 0.0
+var _pickup_ready: bool = false
 
 func _ready():
 	add_to_group("collectibles")
@@ -34,6 +35,9 @@ func _ready():
 		if sprite_node:
 			sprite_node.texture = item.icon
 
+	# Задержка перед возможностью подбора (чтобы выброшенные предметы не подбирались сразу)
+	await get_tree().create_timer(0.5).timeout
+	_pickup_ready = true
 	for body in get_overlapping_bodies():
 		_on_body_entered(body)
 
@@ -50,9 +54,12 @@ func _input(event):
 			get_viewport().set_input_as_handled()
 
 func _on_body_entered(body):
+	if not _pickup_ready:
+		return
 	if body.is_in_group("npc"):
-		# NPCs pick up automatically regardless of state
-		_do_pickup(body)
+		if body.has_method("needs_pickup") and body.needs_pickup():
+			_do_pickup(body)
+		return
 	elif body.is_in_group("player"):
 		overlapping_player = body
 		if prompt_label:

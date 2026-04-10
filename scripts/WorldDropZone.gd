@@ -50,13 +50,15 @@ func _drop_data(_at_position, data):
 	if item == null:
 		return
 
-	# Spawn collectibles in the world near the player
+	# Spawn collectibles near the source character
 	for i in range(quantity):
-		_spawn_collectible(item)
+		_spawn_collectible(item, source)
 
-func _spawn_collectible(item: Item):
-	var player = _find_player()
-	if player == null:
+func _spawn_collectible(item: Item, source: String = "player"):
+	var origin_node = _find_npc() if source == "npc" else _find_player()
+	if origin_node == null:
+		origin_node = _find_player()
+	if origin_node == null:
 		return
 
 	var wrapper: Node2D
@@ -67,9 +69,9 @@ func _spawn_collectible(item: Item):
 		var collectible = collectible_scene.instantiate()
 		collectible.item = item
 		wrapper.add_child(collectible)
-	player.get_parent().add_child(wrapper)
+	origin_node.get_parent().add_child(wrapper)
 
-	var spawn_pos = player.global_position
+	var spawn_pos = origin_node.global_position
 	var land_offset = Vector2(randf_range(-50, 50), randf_range(-10, 30))
 	var land_pos = spawn_pos + land_offset
 	var jump_height = randf_range(20, 35)
@@ -98,4 +100,10 @@ func _find_player() -> Node:
 	var players = get_tree().get_nodes_in_group("player")
 	if players.size() > 0:
 		return players[0]
+	return null
+
+func _find_npc() -> Node:
+	var npcs = get_tree().get_nodes_in_group("npc")
+	if npcs.size() > 0:
+		return npcs[0]
 	return null

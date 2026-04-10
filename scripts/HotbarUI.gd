@@ -49,16 +49,15 @@ func refresh_ui():
 	for child in container.get_children():
 		child.queue_free()
 
-	var items = Inventory.get_items()
-
-	for i in range(10):
+	for i in range(Inventory.SLOT_COUNT):
 		var slot = slot_scene.instantiate()
-		# All slots get the drag script (so they can accept drops too)
 		slot.set_script(drag_script)
 		slot.set_meta("source", "player")
+		slot.set_meta("slot_index", i)
 
-		if i < items.size():
-			var entry = items[i]
+		var entry = Inventory.get_slot(i)
+
+		if entry:
 			slot.set_meta("item_id", entry.item.id)
 		else:
 			slot.set_meta("item_id", "")
@@ -68,8 +67,7 @@ func refresh_ui():
 		var icon_rect = slot.get_node("Icon")
 		var count_label = slot.get_node("CountLabel")
 
-		if i < items.size():
-			var entry = items[i]
+		if entry:
 			if entry.item.icon:
 				icon_rect.texture = entry.item.icon
 			count_label.text = str(entry.quantity) if entry.quantity > 1 else ""
