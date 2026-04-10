@@ -1,7 +1,8 @@
-[gd_scene load_steps=17 format=3 uid="uid://bccxka3j0nulw"]
+[gd_scene load_steps=18 format=3 uid="uid://bccxka3j0nulw"]
 
 [ext_resource type="Texture2D" uid="uid://bkl4h07al4crb" path="res://assets/sprites/someStaff/Sprite-sheet-campfire.png" id="1_w7mda"]
 [ext_resource type="Script" uid="uid://bdoj37qpuuoig" path="res://animated_sprite_2d.gd" id="2_hxy6q"]
+[ext_resource type="Script" path="res://scripts/CampfireHeal.gd" id="4_heal"]
 [ext_resource type="Texture2D" uid="uid://dnrfer74i4wof" path="res://assets/sprites/TestMap/circle.png" id="3_okir6"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_hxy6q"]
@@ -93,6 +94,7 @@ animations = [{
 size = Vector2(19, 6)
 
 [node name="CampFire" type="Node2D"]
+script = ExtResource("4_heal")
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
 position = Vector2(4.76837e-07, -4.76837e-07)

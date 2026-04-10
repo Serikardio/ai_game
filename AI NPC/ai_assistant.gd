@@ -61,7 +61,6 @@ func _ready():
 		player = get_tree().get_first_node_in_group("player")
 
 	if player:
-		add_collision_exception_with(player)
 		if player.has_signal("tree_hit"):
 			player.tree_hit.connect(_on_player_hit_tree)
 
@@ -238,7 +237,7 @@ func _find_craft_spot():
 
 # --- Physics / State Machine ---
 
-func _physics_process(_delta):
+func _physics_process(delta):
 	if current_state == State.MOVING_TO_TREE or current_state == State.ATTACKING:
 		if not is_instance_valid(target_tree) or target_tree.is_cut:
 			target_tree = null
@@ -252,17 +251,17 @@ func _physics_process(_delta):
 
 	match current_state:
 		State.FOLLOWING:
-			_handle_following()
+			_handle_following(delta)
 		State.MOVING_TO_TREE:
-			_handle_moving_to_tree()
+			_handle_moving_to_tree(delta)
 		State.MOVING_TO_CRAFT:
-			_handle_moving_to_craft()
+			_handle_moving_to_craft(delta)
 		State.COLLECTING:
-			_handle_collecting(_delta)
+			_handle_collecting(delta)
 		State.ATTACKING:
 			pass
 
-func _handle_following():
+func _handle_following(delta):
 	if not player:
 		return
 	var dist = global_position.distance_to(player.global_position)
@@ -283,7 +282,7 @@ func _handle_following():
 		_play_idle_animation()
 	move_and_slide()
 
-func _handle_moving_to_tree():
+func _handle_moving_to_tree(delta):
 	if not is_instance_valid(target_tree):
 		current_state = State.FOLLOWING
 		return
@@ -299,7 +298,7 @@ func _handle_moving_to_tree():
 			_play_walk_animation(velocity.normalized())
 		move_and_slide()
 
-func _handle_moving_to_craft():
+func _handle_moving_to_craft(delta):
 	if pending_craft_target == null or not is_instance_valid(pending_craft_target):
 		current_state = State.FOLLOWING
 		pending_recipe = ""
