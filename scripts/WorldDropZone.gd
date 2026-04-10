@@ -59,11 +59,14 @@ func _spawn_collectible(item: Item):
 	if player == null:
 		return
 
-	# Wrap in Node2D because CollectibleItem._do_pickup calls get_parent().queue_free()
-	var wrapper = Node2D.new()
-	var collectible = collectible_scene.instantiate()
-	collectible.item = item
-	wrapper.add_child(collectible)
+	var wrapper: Node2D
+	if item.scene_path != "":
+		wrapper = load(item.scene_path).instantiate()
+	else:
+		wrapper = Node2D.new()
+		var collectible = collectible_scene.instantiate()
+		collectible.item = item
+		wrapper.add_child(collectible)
 	player.get_parent().add_child(wrapper)
 
 	var spawn_pos = player.global_position

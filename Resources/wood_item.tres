@@ -8,4 +8,4 @@ script = ExtResource("1_script")
 id = "wood"
 name = "Дерево"
 icon = ExtResource("2_icon")
-scene_path = ""
+scene_path = "res://scenes/Wood.tscn"

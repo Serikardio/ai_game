@@ -1,9 +1,9 @@
 [gd_scene load_steps=2 format=3 uid="uid://b6m2n3p4q5r6s"]
 
 [node name="HotbarSlot" type="PanelContainer"]
-custom_minimum_size = Vector2(64, 64)
-offset_right = 64.0
-offset_bottom = 64.0
+custom_minimum_size = Vector2(54, 54)
+offset_right = 54.0
+offset_bottom = 54.0
 
 [node name="Icon" type="TextureRect" parent="."]
 layout_mode = 2

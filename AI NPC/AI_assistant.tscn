@@ -3529,6 +3529,20 @@ rotation = 0.708604
 shape = SubResource("RectangleShape2D_7emwf")
 disabled = true
 
+[node name="ChatLabel" type="Label" parent="."]
+visible = false
+texture_filter = 2
+offset_left = -240.0
+offset_top = -45.0
+offset_right = 240.0
+offset_bottom = 5.0
+scale = Vector2(0.25, 0.25)
+pivot_offset = Vector2(240, 30)
+focus_mode = 0
+mouse_filter = 2
+theme_override_font_sizes/font_size = 32
+horizontal_alignment = 1
+
 [node name="AnimationPlayer" type="AnimationPlayer" parent="."]
 libraries = {
 &"": SubResource("AnimationLibrary_m6nl3")

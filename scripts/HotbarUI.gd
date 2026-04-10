@@ -33,6 +33,11 @@ func _on_command_submitted(text: String):
 		if npc.has_method("receive_command"):
 			npc.receive_command(text)
 
+	var players = get_tree().get_nodes_in_group("player")
+	for player in players:
+		if player.has_method("show_chat_message"):
+			player.show_chat_message(text)
+
 	if command_input:
 		command_input.text = ""
 		command_input.visible = false

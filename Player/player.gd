@@ -14,6 +14,9 @@ enum {
 @onready var anim = $AnimatedSprite2D
 @onready var animP = $AnimationPlayer
 @onready var hitbox = $"Hit-box"
+@onready var chat_label = $ChatLabel
+
+var _chat_timer: SceneTreeTimer = null
 
 const WALK_SPEED = 100
 const RUN_SPEED = 200
@@ -173,6 +176,19 @@ func play_idle_animation():
 			anim.play("Idle_down_left")
 		DOWN_RIGHT:
 			anim.play("Idle_down_right")
+
+
+func show_chat_message(text: String, duration: float = 3.0):
+	chat_label.add_theme_color_override("font_color", Color.WHITE)
+	chat_label.scale = Vector2(0.25, 0.25)
+	chat_label.visible = true
+	chat_label.text = text
+	chat_label.visible_ratio = 0.0
+	var tween = create_tween()
+	tween.tween_property(chat_label, "visible_ratio", 1.0, text.length() * 0.03)
+	await tween.finished
+	_chat_timer = get_tree().create_timer(duration)
+	_chat_timer.timeout.connect(func(): chat_label.visible = false)
 
 
 func _on_hitbox_area_entered(area):

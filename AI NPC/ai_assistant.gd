@@ -37,6 +37,9 @@ const RECIPES = {
 @onready var animP: AnimationPlayer = $AnimationPlayer
 @onready var hitbox = $"Hit-box"
 @onready var hitbox_shape = $"Hit-box/CollisionShape2D"
+@onready var chat_label = $ChatLabel
+
+var _chat_timer: SceneTreeTimer = null
 
 func _ready():
 	add_to_group("npc")
@@ -106,7 +109,7 @@ func receive_command(text: String):
 	if detected_handler != "":
 		call(detected_handler, words)
 	else:
-		print("NPC: Привет! Я тебя не совсем понял. Я могу что-то собрать или сделать.")
+		show_chat_message("Не понял... Я могу собрать или сделать!")
 
 func _cmd_gather(args: Array):
 	print("NPC is gathering with args: ", args)
@@ -134,14 +137,14 @@ func _cmd_gather(args: Array):
 		pending_gather_amount = target_total
 		pending_recipe = ""
 
-		print("NPC: Цель - собрать до ", target_total, " дерева (сейчас ", current_count, ")")
+		show_chat_message("Окей! Добуду " + str(target_total) + " дерева")
 		_check_gather_goal()
 		return
 
 	if args.size() >= 2:
-		print("NPC: Не знаю, где искать ", args[1])
+		show_chat_message("Не знаю, где искать " + args[1])
 	else:
-		print("NPC: Уточни, что собрать? Например: 'собери дерево'")
+		show_chat_message("Что собрать? Скажи: собери дерево")
 
 func _cmd_craft(args: Array):
 	var full_text = " ".join(args)
@@ -152,11 +155,11 @@ func _cmd_craft(args: Array):
 			break
 
 	if found_recipe != "":
-		print("NPC: Понял, делаю ", found_recipe)
+		show_chat_message("Понял, делаю " + found_recipe + "!")
 		pending_recipe = found_recipe
 		_check_craft_dependencies()
 	else:
-		print("NPC: Что именно сделать? Я умею: ", ", ".join(RECIPES.keys()))
+		show_chat_message("Что сделать? Я умею: " + ", ".join(RECIPES.keys()))
 
 func _check_gather_goal():
 	if pending_gather_id == "":
@@ -165,7 +168,7 @@ func _check_gather_goal():
 	print("NPC: Проверяю сбор ", pending_gather_id, ": ", count, "/", pending_gather_amount)
 
 	if count >= pending_gather_amount:
-		print("NPC: Сбор окончен! У меня уже есть ", count)
+		show_chat_message("Готово! Собрал " + str(count))
 		pending_gather_id = ""
 		pending_gather_amount = 0
 		current_state = State.FOLLOWING
@@ -435,6 +438,19 @@ func _play_idle_animation():
 		UP_RIGHT:   anim.play("Idle_up_right")
 		DOWN_LEFT:  anim.play("Idle_down_left")
 		DOWN_RIGHT: anim.play("Idle_down_right")
+
+func show_chat_message(text: String, duration: float = 3.0):
+	chat_label.add_theme_color_override("font_color", Color.WHITE)
+	chat_label.scale = Vector2(0.25, 0.25)
+	chat_label.visible = true
+	chat_label.text = text
+	chat_label.visible_ratio = 0.0
+	var tween = create_tween()
+	tween.tween_property(chat_label, "visible_ratio", 1.0, text.length() * 0.03)
+	await tween.finished
+	_chat_timer = get_tree().create_timer(duration)
+	_chat_timer.timeout.connect(func(): chat_label.visible = false)
+
 
 func pick_up(item) -> bool:
 	if item:
