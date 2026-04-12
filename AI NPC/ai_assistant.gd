@@ -8,13 +8,17 @@ const STOP_DIST   = 80.0
 const TREE_FOLLOW_DIST = 600.0
 const ATTACK_DIST = 30.0
 const DAMAGE = 10
+const ENEMY_DETECT_RANGE = 200.0
+const GUARD_RANGE = 250.0
 
-enum State { FOLLOWING, MOVING_TO_TREE, ATTACKING, MOVING_TO_CRAFT, COLLECTING }
+enum State { FOLLOWING, MOVING_TO_TREE, ATTACKING, MOVING_TO_CRAFT, COLLECTING, DEFENDING, GUARDING, ATTACKING_ENEMY, STAYING }
 enum { DOWN, UP, LEFT, RIGHT, UP_LEFT, UP_RIGHT, DOWN_LEFT, DOWN_RIGHT }
 
 var current_state = State.FOLLOWING
 var player: Node2D = null
 var target_tree: Node2D = null
+var target_enemy: Node2D = null
+var guard_position: Vector2 = Vector2.ZERO
 var idle_dir = DOWN
 var current_facing = DOWN
 var is_moving = false
@@ -28,10 +32,41 @@ var pending_recipe = ""
 var pending_craft_target = null
 var pending_gather_id = ""
 var pending_gather_amount = 0
+var pending_chop_count = 0   # Сколько деревьев срубить
+var trees_chopped = 0         # Сколько уже срубили
 var collect_timer = 0.0
+var _return_state = State.FOLLOWING
+var _enemy_warn_cooldown: float = 0.0
+
+const ENEMY_WARN_PHRASES = [
+	"Осторожно, враг!",
+	"Берегись!",
+	"Враг рядом!",
+	"Внимание!",
+]
+
+const ENEMY_KILLED_PHRASES = [
+	"Чисто!",
+	"Готов!",
+	"Разобрался!",
+	"Нет проблем!",
+	"Туда ему и дорога!",
+	"Легко!",
+]
 const RECIPES = {
 	"костер": {"wood": 2}
 }
+
+const DONE_PHRASES = [
+	"Готово!",
+	"Сделано!",
+	"Есть!",
+	"Опа!",
+	"Вуаля!",
+]
+
+func _random_phrase(phrases: Array) -> String:
+	return phrases[randi() % phrases.size()]
 
 @onready var anim: AnimatedSprite2D = $AnimatedSprite2D
 @onready var animP: AnimationPlayer = $AnimationPlayer
@@ -68,6 +103,9 @@ func _ready():
 	hitbox.area_entered.connect(_on_hitbox_area_entered)
 	hitbox_shape.disabled = true
 
+	# Подключаем ИИ-сервис
+	AIService.response_received.connect(_on_ai_response)
+
 # --- Navigation helper ---
 
 func _navigate_to(target_pos: Vector2, speed: float = SPEED) -> Vector2:
@@ -90,6 +128,20 @@ var command_groups = {
 
 func receive_command(text: String):
 	print("NPC received command: ", text)
+	if text.strip_edges() == "":
+		return
+
+	# Если ИИ доступен — отправляем в GPT
+	if AIService.is_available():
+		show_chat_message("Думаю...")
+		AIService.ask(text)
+		return
+
+	# Фоллбэк — старый парсер по ключевым словам
+	_parse_command_local(text)
+
+
+func _parse_command_local(text: String):
 	var lower_text = text.to_lower()
 	var words = Array(lower_text.strip_edges().split(" ", false))
 	if words.size() == 0:
@@ -109,6 +161,68 @@ func receive_command(text: String):
 		call(detected_handler, words)
 	else:
 		show_chat_message("Не понял... Я могу собрать или сделать!")
+
+
+func _on_ai_response(result: Dictionary):
+	if result.has("error"):
+		print("AI error: ", result)
+		show_chat_message("Связь потеряна... Повтори команду!")
+		return
+
+	var action = result.get("action", "chat")
+	var speech = result.get("speech", "...")
+
+	show_chat_message(speech)
+
+	match action:
+		"chop":
+			var amount = result.get("amount", 1)
+			if typeof(amount) == TYPE_FLOAT:
+				amount = int(amount)
+			pending_chop_count = amount
+			trees_chopped = 0
+			pending_gather_id = ""
+			pending_recipe = ""
+			_find_nearest_tree()
+
+		"gather":
+			var item_id = result.get("item_id", "wood")
+			var amount = result.get("amount", 1)
+			if typeof(amount) == TYPE_FLOAT:
+				amount = int(amount)
+			pending_gather_id = item_id
+			pending_gather_amount = amount
+			pending_recipe = ""
+			_check_gather_goal()
+
+		"give":
+			var item_id = result.get("item_id", "wood")
+			var amount = result.get("amount", "all")
+			_give_items_to_player(item_id, amount)
+
+		"craft":
+			var recipe = result.get("recipe", "")
+			if recipe in RECIPES:
+				pending_recipe = recipe
+				_check_craft_dependencies()
+			else:
+				show_chat_message("Не знаю рецепт: " + recipe)
+
+		"follow":
+			current_state = State.FOLLOWING
+
+		"defend":
+			current_state = State.DEFENDING
+
+		"guard":
+			guard_position = global_position
+			current_state = State.GUARDING
+
+		"stay":
+			current_state = State.STAYING
+
+		"chat":
+			pass
 
 func _cmd_gather(args: Array):
 	print("NPC is gathering with args: ", args)
@@ -160,6 +274,66 @@ func _cmd_craft(args: Array):
 	else:
 		show_chat_message("Что сделать? Я умею: " + ", ".join(RECIPES.keys()))
 
+func _give_items_to_player(item_id: String, amount):
+	var npc_count = NPCInventory.get_item_count(item_id)
+	if npc_count == 0:
+		show_chat_message("У меня нет этого.")
+		return
+
+	var give_count = npc_count
+	if typeof(amount) == TYPE_FLOAT:
+		give_count = mini(int(amount), npc_count)
+	elif typeof(amount) == TYPE_INT:
+		give_count = mini(amount, npc_count)
+	# "all" или другое — отдаём всё
+
+	var item = NPCInventory.get_item(item_id)
+	if item == null:
+		return
+
+	for i in give_count:
+		Inventory.add_item(item)
+	NPCInventory.remove_item(item_id, give_count)
+
+	show_chat_message(_random_phrase(DONE_PHRASES))
+	print("NPC отдал игроку: ", item_id, " x", give_count)
+
+
+func _check_chop_goal():
+	if pending_chop_count <= 0:
+		return
+	print("NPC: Рубка деревьев ", trees_chopped, "/", pending_chop_count)
+
+	if trees_chopped >= pending_chop_count:
+		pending_chop_count = 0
+		trees_chopped = 0
+		# Подбираем выпавшие бревна
+		if _find_nearby_item():
+			current_state = State.COLLECTING
+			collect_timer = 3.0
+		else:
+			show_chat_message(_random_phrase(DONE_PHRASES))
+			current_state = State.FOLLOWING
+		return
+
+	# Ищем следующее дерево
+	var trees = get_tree().get_nodes_in_group("trees")
+	var has_trees = false
+	for tree in trees:
+		if not tree.is_cut:
+			has_trees = true
+			break
+
+	if has_trees:
+		_find_nearest_tree()
+	else:
+		# Деревьев больше нет
+		show_chat_message("Больше нет деревьев!")
+		pending_chop_count = 0
+		trees_chopped = 0
+		current_state = State.FOLLOWING
+
+
 func _check_gather_goal():
 	if pending_gather_id == "":
 		return
@@ -167,9 +341,13 @@ func _check_gather_goal():
 	print("NPC: Проверяю сбор ", pending_gather_id, ": ", count, "/", pending_gather_amount)
 
 	if count >= pending_gather_amount:
-		show_chat_message("Готово! Собрал " + str(count))
 		pending_gather_id = ""
 		pending_gather_amount = 0
+		# Если впереди крафт — молчим и идём крафтить
+		if pending_recipe != "":
+			_check_craft_dependencies()
+			return
+		show_chat_message(_random_phrase(DONE_PHRASES))
 		current_state = State.FOLLOWING
 		return
 
@@ -238,14 +416,36 @@ func _find_craft_spot():
 # --- Physics / State Machine ---
 
 func _physics_process(delta):
+	if _enemy_warn_cooldown > 0:
+		_enemy_warn_cooldown -= delta
+
 	if current_state == State.MOVING_TO_TREE or current_state == State.ATTACKING:
 		if not is_instance_valid(target_tree) or target_tree.is_cut:
 			target_tree = null
 			is_attacking = false
 			hitbox_shape.disabled = true
-			if pending_gather_id != "" or pending_recipe != "":
+			# Считаем срубленное дерево
+			if pending_chop_count > 0:
+				trees_chopped += 1
+				_check_chop_goal()
+			elif pending_gather_id != "" or pending_recipe != "":
 				current_state = State.COLLECTING
 				collect_timer = 2.0
+			else:
+				current_state = State.FOLLOWING
+
+	# Проверка вражеской цели
+	if current_state == State.ATTACKING_ENEMY:
+		if not is_instance_valid(target_enemy) or target_enemy.is_dead:
+			target_enemy = null
+			is_attacking = false
+			hitbox_shape.disabled = true
+			show_chat_message(_random_phrase(ENEMY_KILLED_PHRASES))
+			# Возвращаемся в предыдущий режим
+			if _return_state == State.GUARDING:
+				current_state = State.GUARDING
+			elif _return_state == State.DEFENDING:
+				current_state = State.DEFENDING
 			else:
 				current_state = State.FOLLOWING
 
@@ -260,10 +460,30 @@ func _physics_process(delta):
 			_handle_collecting(delta)
 		State.ATTACKING:
 			pass
+		State.ATTACKING_ENEMY:
+			pass
+		State.DEFENDING:
+			_handle_defending(delta)
+		State.GUARDING:
+			_handle_guarding(delta)
+		State.STAYING:
+			velocity = Vector2.ZERO
+			_play_idle_animation()
+			move_and_slide()
 
 func _handle_following(delta):
 	if not player:
 		return
+
+	# Защита по умолчанию — если враг близко к игроку, атакуем
+	var enemy = _find_nearest_enemy(player.global_position, ENEMY_DETECT_RANGE)
+	if enemy:
+		if _enemy_warn_cooldown <= 0:
+			show_chat_message(_random_phrase(ENEMY_WARN_PHRASES))
+			_enemy_warn_cooldown = 8.0
+		_engage_enemy(enemy, State.FOLLOWING)
+		return
+
 	var dist = global_position.distance_to(player.global_position)
 
 	if not is_moving and dist > FOLLOW_DIST:
@@ -320,6 +540,7 @@ func _handle_moving_to_craft(delta):
 
 		if target.has_method("try_build"):
 			target.try_build(self)
+			show_chat_message(_random_phrase(DONE_PHRASES))
 	else:
 		velocity = _navigate_to(pending_craft_target.global_position, SPEED)
 		if velocity.length() > 0:
@@ -349,14 +570,102 @@ func _handle_collecting(delta):
 	else:
 		collect_timer -= delta
 		if collect_timer <= 0:
-			current_state = State.FOLLOWING
-			if pending_recipe != "":
+			if pending_chop_count > 0:
+				_check_chop_goal()
+			elif pending_recipe != "":
 				_check_craft_dependencies()
 			elif pending_gather_id != "":
 				_check_gather_goal()
+			else:
+				show_chat_message(_random_phrase(DONE_PHRASES))
+				current_state = State.FOLLOWING
+
+# --- Поиск врагов ---
+
+func _find_nearest_enemy(from_pos: Vector2, range: float) -> Node2D:
+	var enemies = get_tree().get_nodes_in_group("enemies")
+	var closest = null
+	var min_dist = range
+	for enemy in enemies:
+		if enemy.is_dead:
+			continue
+		var dist = from_pos.distance_to(enemy.global_position)
+		if dist < min_dist:
+			min_dist = dist
+			closest = enemy
+	return closest
+
+func _engage_enemy(enemy: Node2D, return_to: State):
+	target_enemy = enemy
+	_return_state = return_to
+	current_state = State.ATTACKING_ENEMY
+	_attack_enemy_loop()
+
+# --- Защита (DEFENDING) — следует за игроком + атакует врагов рядом ---
+
+func _handle_defending(delta):
+	# Ищем врага рядом с игроком
+	var enemy = _find_nearest_enemy(player.global_position, ENEMY_DETECT_RANGE)
+	if enemy:
+		_engage_enemy(enemy, State.DEFENDING)
+		return
+
+	# Иначе — просто следуем
+	_handle_following(delta)
+
+# --- Охрана территории (GUARDING) — стоит на месте + атакует врагов ---
+
+func _handle_guarding(delta):
+	# Ищем врага рядом с точкой охраны
+	var enemy = _find_nearest_enemy(guard_position, GUARD_RANGE)
+	if enemy:
+		_engage_enemy(enemy, State.GUARDING)
+		return
+
+	# Возвращаемся на точку охраны
+	var dist = global_position.distance_to(guard_position)
+	if dist > 15.0:
+		velocity = _navigate_to(guard_position, SPEED)
+		if velocity.length() > 0:
+			_play_walk_animation(velocity.normalized())
+		move_and_slide()
+	else:
+		velocity = Vector2.ZERO
+		_play_idle_animation()
+		move_and_slide()
+
+# --- Атака врага ---
+
+func _attack_enemy_loop():
+	while is_instance_valid(target_enemy) and not target_enemy.is_dead and current_state == State.ATTACKING_ENEMY:
+		var dist = global_position.distance_to(target_enemy.global_position)
+
+		if dist > ATTACK_DIST:
+			# Подбегаем к врагу
+			velocity = _navigate_to(target_enemy.global_position, RUN_SPEED)
+			if velocity.length() > 0:
+				_play_walk_animation(velocity.normalized(), true)
+			move_and_slide()
+			await get_tree().process_frame
+			continue
+
+		# Атакуем
+		velocity = Vector2.ZERO
+		var dir_to = (target_enemy.global_position - global_position).normalized()
+		var attack_dir = _get_dir_enum(dir_to)
+
+		is_attacking = true
+		_update_hitbox(attack_dir)
+		_start_attack_animation(attack_dir)
+
+		await get_tree().create_timer(0.4).timeout
+		await get_tree().create_timer(0.1).timeout
+
+	is_attacking = false
+	hitbox_shape.disabled = true
 
 func _on_player_hit_tree(tree):
-	if current_state == State.FOLLOWING:
+	if current_state == State.FOLLOWING or current_state == State.DEFENDING:
 		target_tree = tree
 		current_state = State.MOVING_TO_TREE
 
@@ -407,6 +716,8 @@ func _on_hitbox_area_entered(area):
 	var obj = area.get_parent()
 	if obj.has_method("mine"):
 		obj.mine(DAMAGE)
+	if obj.has_method("take_damage") and obj.is_in_group("enemies"):
+		obj.take_damage(DAMAGE)
 
 # --- Animation ---
 

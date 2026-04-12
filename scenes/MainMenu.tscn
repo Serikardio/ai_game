@@ -114,6 +114,16 @@ min_value = 0.0
 max_value = 100.0
 value = 80.0
 
+[node name="MusicLabel" type="Label" parent="SettingsPanel/VBoxContainer"]
+layout_mode = 2
+text = "Музыка"
+
+[node name="MusicSlider" type="HSlider" parent="SettingsPanel/VBoxContainer"]
+layout_mode = 2
+min_value = 0.0
+max_value = 100.0
+value = 80.0
+
 [node name="SFXLabel" type="Label" parent="SettingsPanel/VBoxContainer"]
 layout_mode = 2
 text = "Звуки"
@@ -138,6 +148,7 @@ text = "Назад"
 [connection signal="pressed" from="MainButtons/SettingsButton" to="." method="_on_settings_pressed"]
 [connection signal="pressed" from="MainButtons/QuitButton" to="." method="_on_quit_pressed"]
 [connection signal="value_changed" from="SettingsPanel/VBoxContainer/MasterSlider" to="." method="_on_master_slider_value_changed"]
+[connection signal="value_changed" from="SettingsPanel/VBoxContainer/MusicSlider" to="." method="_on_music_slider_value_changed"]
 [connection signal="value_changed" from="SettingsPanel/VBoxContainer/SFXSlider" to="." method="_on_sfx_slider_value_changed"]
 [connection signal="toggled" from="SettingsPanel/VBoxContainer/FullscreenCheck" to="." method="_on_fullscreen_toggled"]
 [connection signal="pressed" from="SettingsPanel/VBoxContainer/BackButton" to="." method="_on_back_pressed"]

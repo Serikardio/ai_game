@@ -6,6 +6,9 @@ func _ready():
 	# Y-sort so characters hide behind trees correctly
 	y_sort_enabled = true
 
+	# Фоновая музыка
+	AudioManager.play_music(AudioManager.MUSIC_ARIA_MATH, -25.0)
+
 	# Add world drop zone (catches items dragged outside any hotbar)
 	var drop_layer = CanvasLayer.new()
 	drop_layer.name = "WorldDropZoneLayer"

@@ -15,9 +15,10 @@ func _ready():
 func mine(damage):
 	if is_cut:
 		return
-		
+
 	health -= damage
 	print("Удар по дереву. Осталось HP: ", health)
+	AudioManager.play_sfx(AudioManager.SFX_WOOD_HIT, 0.0, 0.15)
 	flash()
 
 	if health <= 0:

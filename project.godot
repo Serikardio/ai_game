@@ -19,6 +19,8 @@ config/icon="res://icon.svg"
 
 Inventory="*res://scripts/Inventory.gd"
 NPCInventory="*res://scripts/NPCInventory.gd"
+AudioManager="*res://scripts/AudioManager.gd"
+AIService="*res://scripts/AIService.gd"
 
 [editor_plugins]
 
