@@ -1,17 +1,17 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=3 format=3 uid="uid://crcatto3n5ixq"]
 
-[ext_resource type="Script" path="res://scripts/MainMenu.gd" id="1_script"]
+[ext_resource type="Script" uid="uid://bkufy86ond725" path="res://scripts/MainMenu.gd" id="1_script"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_btn"]
+content_margin_left = 20.0
+content_margin_top = 10.0
+content_margin_right = 20.0
+content_margin_bottom = 10.0
 bg_color = Color(0.15, 0.15, 0.2, 0.9)
 corner_radius_top_left = 8
 corner_radius_top_right = 8
 corner_radius_bottom_right = 8
 corner_radius_bottom_left = 8
-content_margin_left = 20.0
-content_margin_top = 10.0
-content_margin_right = 20.0
-content_margin_bottom = 10.0
 
 [node name="MainMenu" type="Control"]
 layout_mode = 3
@@ -42,8 +42,8 @@ offset_right = 200.0
 offset_bottom = 140.0
 grow_horizontal = 2
 theme_override_font_sizes/font_size = 48
-horizontal_alignment = 1
 text = "AI Assistant"
+horizontal_alignment = 1
 
 [node name="MainButtons" type="VBoxContainer" parent="."]
 layout_mode = 1
@@ -101,8 +101,8 @@ theme_override_constants/separation = 14
 [node name="TitleLabel" type="Label" parent="SettingsPanel/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
-horizontal_alignment = 1
 text = "Настройки"
+horizontal_alignment = 1
 
 [node name="MasterLabel" type="Label" parent="SettingsPanel/VBoxContainer"]
 layout_mode = 2
@@ -110,8 +110,6 @@ text = "Громкость"
 
 [node name="MasterSlider" type="HSlider" parent="SettingsPanel/VBoxContainer"]
 layout_mode = 2
-min_value = 0.0
-max_value = 100.0
 value = 80.0
 
 [node name="MusicLabel" type="Label" parent="SettingsPanel/VBoxContainer"]
@@ -120,8 +118,6 @@ text = "Музыка"
 
 [node name="MusicSlider" type="HSlider" parent="SettingsPanel/VBoxContainer"]
 layout_mode = 2
-min_value = 0.0
-max_value = 100.0
 value = 80.0
 
 [node name="SFXLabel" type="Label" parent="SettingsPanel/VBoxContainer"]
@@ -130,8 +126,6 @@ text = "Звуки"
 
 [node name="SFXSlider" type="HSlider" parent="SettingsPanel/VBoxContainer"]
 layout_mode = 2
-min_value = 0.0
-max_value = 100.0
 value = 80.0
 
 [node name="FullscreenCheck" type="CheckButton" parent="SettingsPanel/VBoxContainer"]

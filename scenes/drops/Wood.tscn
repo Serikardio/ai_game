@@ -3,7 +3,7 @@
 [ext_resource type="Texture2D" uid="uid://dcttp4ek10uk0" path="res://assets/sprites/TestMap/Wood_v3.png" id="1_0m61w"]
 [ext_resource type="Texture2D" uid="uid://d4ac2cakmxmfd" path="res://assets/sprites/The Female Adventurer - Free/Shadow.png" id="2_8qflt"]
 [ext_resource type="Script" uid="uid://48dphm5opd0e" path="res://scripts/CollectibleItem.gd" id="3_script"]
-[ext_resource type="Resource" uid="uid://c6r7e8xaq0p1a" path="res://Resources/wood_item.tres" id="4_resource"]
+[ext_resource type="Resource" uid="uid://c6r7e8xaq0p1a" path="res://Resources/Wood/wood_item.tres" id="4_resource"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_i5xfd"]
 size = Vector2(24, 11)

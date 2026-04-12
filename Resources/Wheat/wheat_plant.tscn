@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://Resources/Wheat/wheat.gd" id="1_script"]
+[ext_resource type="Texture2D" path="res://assets/sprites/TestMap/Outdoor_Decor_Free.png" id="2_atlas"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_wheat"]
+size = Vector2(12, 12)
+
+[node name="WheatPlant" type="Node2D"]
+script = ExtResource("1_script")
+grow_time = 30.0
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture_filter = 0
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+shape = SubResource("RectangleShape2D_wheat")

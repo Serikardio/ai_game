@@ -1,6 +1,6 @@
 extends CanvasLayer
 
-@export var slot_scene: PackedScene = preload("res://scenes/HotbarSlot.tscn")
+@export var slot_scene: PackedScene = preload("res://scenes/ui/HotbarSlot.tscn")
 @export var show_distance: float = 150.0
 @onready var container = $NPCInventoryUI/VBoxContainer
 @onready var npc_ui = $NPCInventoryUI

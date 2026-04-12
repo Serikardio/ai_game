@@ -1,6 +1,6 @@
 extends Control
 
-@export var slot_scene: PackedScene = preload("res://scenes/HotbarSlot.tscn")
+@export var slot_scene: PackedScene = preload("res://scenes/ui/HotbarSlot.tscn")
 @onready var container = $HBoxContainer
 @onready var command_input = $CommandInput
 

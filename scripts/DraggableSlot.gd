@@ -2,6 +2,20 @@ extends PanelContainer
 
 ## Hotbar slot that supports drag-and-drop.
 ## Drag = whole stack. Ctrl+Drag = half stack.
+## Double-click = use item (eat wheat etc.)
+
+const EDIBLE_ITEMS = {
+	"wheat": 20,  # item_id: heal_amount
+}
+
+func _gui_input(event):
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.double_click:
+		var item_id = get_meta("item_id", "")
+		var source = get_meta("source", "")
+		if item_id in EDIBLE_ITEMS and source == "player":
+			var player = get_tree().get_first_node_in_group("player")
+			if player and player.has_method("eat_item"):
+				player.eat_item(item_id)
 
 func _get_drag_data(_at_position):
 	var item_id = get_meta("item_id", "")

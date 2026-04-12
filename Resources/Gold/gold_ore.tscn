@@ -1,0 +1,35 @@
+[gd_scene load_steps=6 format=3 uid="uid://b6xigudsgw3vr"]
+
+[ext_resource type="Script" uid="uid://buh4urn2mm10x" path="res://Resources/mineable.gd" id="1_script"]
+[ext_resource type="PackedScene" path="res://scenes/drops/Gold.tscn" id="2_drop"]
+[ext_resource type="Texture2D" uid="uid://d4ijygxd534t1" path="res://assets/sprites/TestMap/Outdoor_Decor_Free.png" id="3_bjohk"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_bjohk"]
+atlas = ExtResource("3_bjohk")
+region = Rect2(0, 80, 16, 16)
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_gold"]
+size = Vector2(14.5, 21.625)
+
+[node name="GoldOre" type="Node2D"]
+script = ExtResource("1_script")
+stage_hp = 20
+drop_scene = ExtResource("2_drop")
+group_name = "gold_ores"
+stage_regions = Array[Rect2]([Rect2(0, 80, 16, 16), Rect2(16, 80, 16, 16), Rect2(32, 80, 16, 16)])
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+scale = Vector2(1.7, 1.7)
+texture = SubResource("AtlasTexture_bjohk")
+
+[node name="Area2D" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+position = Vector2(0, 1)
+shape = SubResource("RectangleShape2D_gold")
+
+[node name="StaticBody2D" type="StaticBody2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="StaticBody2D"]
+position = Vector2(0, 1)
+shape = SubResource("RectangleShape2D_gold")

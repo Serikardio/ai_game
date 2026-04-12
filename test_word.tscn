@@ -1,4 +1,4 @@
-[gd_scene load_steps=35 format=3 uid="uid://bth8vhv30kaes"]
+[gd_scene load_steps=38 format=3 uid="uid://bth8vhv30kaes"]
 
 [ext_resource type="PackedScene" uid="uid://bo2re7ftaifuj" path="res://Player/player.tscn" id="1_bngvt"]
 [ext_resource type="Texture2D" uid="uid://bq3a05uppoh1c" path="res://assets/sprites/TestMap/decor_16x16.png" id="1_o25q5"]
@@ -12,14 +12,17 @@
 [ext_resource type="Texture2D" uid="uid://d4ijygxd534t1" path="res://assets/sprites/TestMap/Outdoor_Decor_Free.png" id="8_d8s8s"]
 [ext_resource type="Texture2D" uid="uid://k32cdelc8m0y" path="res://assets/sprites/TestMap/plains.png" id="9_teuy2"]
 [ext_resource type="Texture2D" uid="uid://cm0de3bf0iidd" path="res://assets/sprites/FreeEnvironment/FreePack.png" id="10_16qet"]
-[ext_resource type="PackedScene" uid="uid://b2sqj2ladm2t0" path="res://Resources/tree.tscn" id="11_cwruo"]
-[ext_resource type="PackedScene" uid="uid://c5k4j3h2g1f0e" path="res://scenes/Hotbar.tscn" id="15_hotbar"]
+[ext_resource type="PackedScene" uid="uid://b2sqj2ladm2t0" path="res://Resources/Wood/tree.tscn" id="11_cwruo"]
+[ext_resource type="PackedScene" uid="uid://c5k4j3h2g1f0e" path="res://scenes/ui/Hotbar.tscn" id="15_hotbar"]
 [ext_resource type="PackedScene" uid="uid://rlatlpd7up8l" path="res://AI NPC/AI_assistant.tscn" id="16_3geah"]
 [ext_resource type="PackedScene" uid="uid://0p5oxajl4esb" path="res://scenes/CampfireSpot.tscn" id="16_campspot"]
-[ext_resource type="PackedScene" uid="uid://dgpb0qq1e3jov" path="res://scenes/NPCInventory.tscn" id="17_npcinv"]
-[ext_resource type="PackedScene" path="res://scenes/Minimap.tscn" id="18_minimap"]
+[ext_resource type="PackedScene" uid="uid://dgpb0qq1e3jov" path="res://scenes/ui/NPCInventory.tscn" id="17_npcinv"]
+[ext_resource type="PackedScene" path="res://scenes/ui/Minimap.tscn" id="18_minimap"]
 [ext_resource type="PackedScene" uid="uid://cyd1pddd5eoxc" path="res://Enemies/enemy_orc.tscn" id="19_rus2e"]
-[ext_resource type="PackedScene" path="res://scenes/PlayerHUD.tscn" id="20_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/PlayerHUD.tscn" id="20_hud"]
+[ext_resource type="PackedScene" uid="uid://thl1rhm6f2v" path="res://Resources/Stone/stone_rock.tscn" id="20_rw336"]
+[ext_resource type="PackedScene" uid="uid://b6xigudsgw3vr" path="res://Resources/Gold/gold_ore.tscn" id="22_jyauy"]
+[ext_resource type="PackedScene" path="res://Resources/Wheat/wheat_plant.tscn" id="23_nt4o0"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_rus2e"]
 texture = ExtResource("1_o25q5")
@@ -969,6 +972,9 @@ position = Vector2(2511, 1369)
 [node name="Orc" parent="." instance=ExtResource("19_rus2e")]
 position = Vector2(1892, 1402)
 
+[node name="StoneRock" parent="." instance=ExtResource("20_rw336")]
+position = Vector2(2874, 1488)
+
 [node name="Tree" parent="." instance=ExtResource("11_cwruo")]
 position = Vector2(1654, 1492)
 
@@ -1124,3 +1130,30 @@ position = Vector2(615, -183)
 
 [node name="Tree52" parent="Tree" instance=ExtResource("11_cwruo")]
 position = Vector2(608, -28)
+
+[node name="GoldOre" parent="." instance=ExtResource("22_jyauy")]
+position = Vector2(2902, 1481)
+
+[node name="WheatPlant" parent="." instance=ExtResource("23_nt4o0")]
+position = Vector2(2474, 1316)
+
+[node name="WheatPlant2" parent="WheatPlant" instance=ExtResource("23_nt4o0")]
+position = Vector2(-109, -80)
+
+[node name="WheatPlant3" parent="WheatPlant" instance=ExtResource("23_nt4o0")]
+position = Vector2(-93, -93)
+
+[node name="WheatPlant4" parent="WheatPlant" instance=ExtResource("23_nt4o0")]
+position = Vector2(-106, -107)
+
+[node name="WheatPlant5" parent="WheatPlant" instance=ExtResource("23_nt4o0")]
+position = Vector2(-13, 19)
+
+[node name="WheatPlant6" parent="WheatPlant" instance=ExtResource("23_nt4o0")]
+position = Vector2(2, -28)
+
+[node name="WheatPlant7" parent="WheatPlant" instance=ExtResource("23_nt4o0")]
+position = Vector2(37, -19)
+
+[node name="WheatPlant8" parent="WheatPlant" instance=ExtResource("23_nt4o0")]
+position = Vector2(-21, -8)

@@ -20,6 +20,19 @@ func _ready():
 	drop_zone.set_script(preload("res://scripts/WorldDropZone.gd"))
 	drop_layer.add_child(drop_zone)
 
+	# Панель крафта
+	var craft_layer = CanvasLayer.new()
+	craft_layer.name = "CraftingLayer"
+	craft_layer.layer = 1
+	add_child(craft_layer)
+
+	var craft_panel = Control.new()
+	craft_panel.name = "CraftingPanel"
+	craft_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	craft_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	craft_panel.set_script(preload("res://scripts/CraftingPanel.gd"))
+	craft_layer.add_child(craft_panel)
+
 	# Navigation setup — bake navmesh from static colliders
 	_setup_navigation()
 

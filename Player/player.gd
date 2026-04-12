@@ -113,11 +113,20 @@ func _physics_process(delta):
 	move_and_slide()
 
 
+const HEAL_AMOUNT = 20
+
 func pick_up(item) -> bool:
 	if item:
 		Inventory.add_item(item)
 		return true
 	return false
+
+func eat_item(item_id: String):
+	if item_id == "wheat" and Inventory.get_item_count("wheat") > 0:
+		Inventory.remove_item("wheat", 1)
+		health = mini(health + HEAL_AMOUNT, max_health)
+		health_changed.emit(health, max_health)
+		show_chat_message("Ням! +" + str(HEAL_AMOUNT) + " HP")
 
 
 func run():

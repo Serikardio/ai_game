@@ -32,8 +32,9 @@ var pending_recipe = ""
 var pending_craft_target = null
 var pending_gather_id = ""
 var pending_gather_amount = 0
-var pending_chop_count = 0   # Сколько деревьев срубить
-var trees_chopped = 0         # Сколько уже срубили
+var pending_chop_count = 0   # Сколько объектов добыть
+var pending_chop_groups: Array = ["trees"]  # Какие группы искать
+var trees_chopped = 0         # Сколько уже добыли
 var collect_timer = 0.0
 var _return_state = State.FOLLOWING
 var _enemy_warn_cooldown: float = 0.0
@@ -45,6 +46,13 @@ const ENEMY_WARN_PHRASES = [
 	"Внимание!",
 ]
 
+const HELP_PHRASES = [
+	"Помогу!",
+	"Иду!",
+	"Сейчас!",
+	"Вместе быстрее!",
+]
+
 const ENEMY_KILLED_PHRASES = [
 	"Чисто!",
 	"Готов!",
@@ -54,8 +62,21 @@ const ENEMY_KILLED_PHRASES = [
 	"Легко!",
 ]
 const RECIPES = {
-	"костер": {"wood": 2}
+	"костер": {"wood": 2},
+	"блок камня": {"stone": 3},
+	"слиток золота": {"gold": 3},
 }
+
+# Маппинг ресурсов → группы объектов на карте
+const RESOURCE_GROUPS = {
+	"wood": ["trees"],
+	"stone": ["rocks"],
+	"gold": ["gold_ores"],
+	"wheat": ["wheat"],
+}
+
+func _groups_for_resource(item_id: String) -> Array:
+	return RESOURCE_GROUPS.get(item_id, ["trees"])
 
 const DONE_PHRASES = [
 	"Готово!",
@@ -179,11 +200,18 @@ func _on_ai_response(result: Dictionary):
 			var amount = result.get("amount", 1)
 			if typeof(amount) == TYPE_FLOAT:
 				amount = int(amount)
+			var target_type = result.get("target", "tree")
 			pending_chop_count = amount
 			trees_chopped = 0
 			pending_gather_id = ""
 			pending_recipe = ""
-			_find_nearest_tree()
+			# Определяем группу по типу цели
+			match target_type:
+				"rock", "stone": pending_chop_groups = ["rocks"]
+				"gold": pending_chop_groups = ["gold_ores"]
+				"wheat": pending_chop_groups = ["wheat"]
+				_: pending_chop_groups = ["trees"]
+			_find_nearest_tree(pending_chop_groups)
 
 		"gather":
 			var item_id = result.get("item_id", "wood")
@@ -316,19 +344,20 @@ func _check_chop_goal():
 			current_state = State.FOLLOWING
 		return
 
-	# Ищем следующее дерево
-	var trees = get_tree().get_nodes_in_group("trees")
-	var has_trees = false
-	for tree in trees:
-		if not tree.is_cut:
-			has_trees = true
+	# Ищем следующий объект
+	var has_targets = false
+	for group_name in pending_chop_groups:
+		for obj in get_tree().get_nodes_in_group(group_name):
+			if not _is_target_destroyed(obj):
+				has_targets = true
+				break
+		if has_targets:
 			break
 
-	if has_trees:
-		_find_nearest_tree()
+	if has_targets:
+		_find_nearest_tree(pending_chop_groups)
 	else:
-		# Деревьев больше нет
-		show_chat_message("Больше нет деревьев!")
+		show_chat_message("Больше нечего добывать!")
 		pending_chop_count = 0
 		trees_chopped = 0
 		current_state = State.FOLLOWING
@@ -355,7 +384,7 @@ func _check_gather_goal():
 		current_state = State.COLLECTING
 		collect_timer = 3.0
 	else:
-		_find_nearest_tree()
+		_find_nearest_tree(_groups_for_resource(pending_gather_id))
 
 func _check_craft_dependencies():
 	if pending_recipe == "":
@@ -373,26 +402,34 @@ func _check_craft_dependencies():
 		_find_craft_spot()
 		return
 
+	# Ищем первый недостающий ресурс
+	var missing_id = "wood"
+	for res_id in requirements:
+		if NPCInventory.get_item_count(res_id) < requirements[res_id]:
+			missing_id = res_id
+			break
+
 	if _find_nearby_item():
 		current_state = State.COLLECTING
 		collect_timer = 3.0
 	else:
-		_find_nearest_tree()
+		_find_nearest_tree(_groups_for_resource(missing_id))
 
-func _find_nearest_tree():
-	var trees = get_tree().get_nodes_in_group("trees")
-	var closest_tree = null
+func _find_nearest_tree(groups: Array = ["trees"]):
+	var closest = null
 	var min_dist = INF
 
-	for tree in trees:
-		if not tree.is_cut:
-			var dist = global_position.distance_to(tree.global_position)
+	for group_name in groups:
+		for obj in get_tree().get_nodes_in_group(group_name):
+			if _is_target_destroyed(obj):
+				continue
+			var dist = global_position.distance_to(obj.global_position)
 			if dist < min_dist:
 				min_dist = dist
-				closest_tree = tree
+				closest = obj
 
-	if closest_tree:
-		target_tree = closest_tree
+	if closest:
+		target_tree = closest
 		current_state = State.MOVING_TO_TREE
 	else:
 		current_state = State.FOLLOWING
@@ -413,6 +450,20 @@ func _find_craft_spot():
 	else:
 		current_state = State.FOLLOWING
 
+func _is_target_destroyed(obj) -> bool:
+	if obj == null:
+		return true
+	if obj.get("is_cut") != null:
+		return obj.is_cut
+	if obj.get("is_mined") != null:
+		return obj.is_mined
+	# Пшеница — считаем "уничтоженной" если не созрела
+	if obj.has_method("can_harvest"):
+		return not obj.can_harvest()
+	if obj.get("is_harvested") != null:
+		return obj.is_harvested
+	return false
+
 # --- Physics / State Machine ---
 
 func _physics_process(delta):
@@ -420,7 +471,7 @@ func _physics_process(delta):
 		_enemy_warn_cooldown -= delta
 
 	if current_state == State.MOVING_TO_TREE or current_state == State.ATTACKING:
-		if not is_instance_valid(target_tree) or target_tree.is_cut:
+		if not is_instance_valid(target_tree) or _is_target_destroyed(target_tree):
 			target_tree = null
 			is_attacking = false
 			hitbox_shape.disabled = true
@@ -668,11 +719,12 @@ func _on_player_hit_tree(tree):
 	if current_state == State.FOLLOWING or current_state == State.DEFENDING:
 		target_tree = tree
 		current_state = State.MOVING_TO_TREE
+		show_chat_message(_random_phrase(HELP_PHRASES))
 
 # --- Attack ---
 
 func _attack_loop():
-	while is_instance_valid(target_tree) and not target_tree.is_cut and current_state == State.ATTACKING:
+	while is_instance_valid(target_tree) and not _is_target_destroyed(target_tree) and current_state == State.ATTACKING:
 		var dir_to_tree = (target_tree.global_position - global_position).normalized()
 		var attack_dir = _get_dir_enum(dir_to_tree)
 
@@ -685,6 +737,10 @@ func _attack_loop():
 
 	is_attacking = false
 	hitbox_shape.disabled = true
+	# Отходим от места добычи чтобы не блокировать дроп
+	if is_instance_valid(target_tree):
+		var retreat_dir = (global_position - target_tree.global_position).normalized()
+		global_position += retreat_dir * 25.0
 	if current_state == State.ATTACKING:
 		current_state = State.FOLLOWING
 
@@ -750,7 +806,7 @@ func _play_idle_animation():
 		DOWN_RIGHT: anim.play("Idle_down_right")
 
 func needs_pickup() -> bool:
-	return pending_gather_id != "" or pending_recipe != ""
+	return pending_gather_id != "" or pending_recipe != "" or pending_chop_count > 0
 
 
 func show_chat_message(text: String, duration: float = 3.0):

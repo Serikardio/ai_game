@@ -7,7 +7,7 @@ var hit_tween: Tween
 @onready var sprite = $OakTree
 @onready var collision = $Area2D/CollisionShape2D
 
-const WOOD_SCENE = preload("res://scenes/Wood.tscn")
+const WOOD_SCENE = preload("res://scenes/drops/Wood.tscn")
 
 func _ready():
 	add_to_group("trees")
@@ -54,28 +54,40 @@ func _drop_items_deferred(spawn_pos):
 	var parent = get_parent()
 	if not parent:
 		return
-		
+
+	# Позиции персонажей для отталкивания
+	var bodies: Array[Vector2] = []
+	for g in ["player", "npc"]:
+		for b in get_tree().get_nodes_in_group(g):
+			bodies.append(b.global_position)
+
 	var count = randi_range(1, 3)
 	for i in range(count):
 		var wood = WOOD_SCENE.instantiate()
 		parent.add_child(wood)
-		
+
 		wood.global_position = spawn_pos
 		wood.scale = Vector2.ONE
 
 		var land_offset = Vector2(randf_range(-50, 50), randf_range(-10, 30))
 		var land_pos = spawn_pos + land_offset
+
+		# Отталкиваем от персонажей
+		for body_pos in bodies:
+			var dist = land_pos.distance_to(body_pos)
+			if dist < 30.0 and dist > 0.1:
+				var push = (land_pos - body_pos).normalized() * (30.0 - dist)
+				land_pos += push
+
 		var jump_height = randf_range(20, 35)
 
 		var tween = wood.create_tween()
-		# Прыжок 1: дуга до точки приземления
 		tween.tween_method(func(t: float):
 			var pos = spawn_pos.lerp(land_pos, t)
 			pos.y -= sin(t * PI) * jump_height
 			wood.global_position = pos
 		, 0.0, 1.0, 0.3).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 
-		# Прыжок 2: маленький отскок
 		var bounce_offset = Vector2(randf_range(-10, 10), randf_range(-5, 5))
 		var bounce_pos = land_pos + bounce_offset
 		tween.tween_method(func(t: float):

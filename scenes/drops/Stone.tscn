@@ -1,0 +1,28 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Texture2D" path="res://Resources/Stone/stone_drop_icon.tres" id="1_tex"]
+[ext_resource type="Texture2D" path="res://assets/sprites/The Female Adventurer - Free/Shadow.png" id="2_shadow"]
+[ext_resource type="Script" path="res://scripts/CollectibleItem.gd" id="3_script"]
+[ext_resource type="Resource" path="res://Resources/Stone/stone_item.tres" id="4_resource"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_stone"]
+size = Vector2(14, 10)
+
+[node name="Stone" type="Node2D"]
+
+[node name="shadow" type="Sprite2D" parent="."]
+position = Vector2(0, 2)
+scale = Vector2(1.2, 0.5)
+texture = ExtResource("2_shadow")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_tex")
+texture_filter = 0
+
+[node name="Area2D" type="Area2D" parent="."]
+collision_layer = 4
+script = ExtResource("3_script")
+item = ExtResource("4_resource")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Area2D"]
+shape = SubResource("RectangleShape2D_stone")

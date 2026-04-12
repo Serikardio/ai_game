@@ -46,6 +46,7 @@ func _process(delta):
 		_bob_time += delta * 2.5
 		_sprite.position.y = _sprite_base_y + sin(_bob_time) * 1.5
 
+
 func _input(event):
 	if overlapping_player and event.is_action_pressed("Use"):
 		# Принудительно заставляем только ОДИН предмет откликнуться на нажатие
