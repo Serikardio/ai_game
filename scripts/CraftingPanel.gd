@@ -37,9 +37,9 @@ func _ready():
 func _build_ui():
 	var panel = PanelContainer.new()
 	panel.anchor_left = 0
-	panel.anchor_top = 0.3
+	panel.anchor_top = 0.45
 	panel.anchor_right = 0
-	panel.anchor_bottom = 0.3
+	panel.anchor_bottom = 0.45
 	panel.offset_left = 8
 	panel.offset_right = 60
 	panel.grow_horizontal = Control.GROW_DIRECTION_END
@@ -150,10 +150,19 @@ func _on_craft_pressed(recipe: Dictionary):
 			var campfire = load("res://camp_fire.tscn").instantiate()
 			player.get_parent().add_child(campfire)
 			campfire.global_position = player.global_position + Vector2(40, 0)
+			# Проверяем — костёр рядом с тотемами?
+			_check_campfire_near_totems(campfire.global_position)
 	elif recipe.has("result_item") and recipe.result_item != null:
 		Inventory.add_item(recipe.result_item)
 
 	_update_availability()
+
+func _check_campfire_near_totems(pos: Vector2):
+	var totems = get_tree().get_nodes_in_group("quest_totems")
+	for totem in totems:
+		if pos.distance_to(totem.global_position) < 150.0:
+			QuestManager.complete_campfire()
+			return
 
 func _update_availability():
 	for entry in recipe_buttons:

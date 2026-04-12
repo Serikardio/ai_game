@@ -104,7 +104,7 @@ func _ready():
 	nav_agent = NavigationAgent2D.new()
 	nav_agent.path_desired_distance = 4.0
 	nav_agent.target_desired_distance = 4.0
-	nav_agent.path_max_distance = 50.0
+	nav_agent.path_max_distance = 500.0
 	nav_agent.avoidance_enabled = false
 	add_child(nav_agent)
 
@@ -135,9 +135,8 @@ func _navigate_to(target_pos: Vector2, speed: float = SPEED) -> Vector2:
 		return Vector2.ZERO
 	var next_pos = nav_agent.get_next_path_position()
 	var dir = global_position.direction_to(next_pos)
-	# Fallback: if nav returns current position, use direct movement
 	if dir.length() < 0.01:
-		dir = global_position.direction_to(target_pos)
+		return Vector2.ZERO
 	return dir * speed
 
 # --- Command System ---
@@ -553,6 +552,8 @@ func _handle_following(delta):
 		_play_idle_animation()
 	move_and_slide()
 
+var _stuck_timer: float = 0.0
+
 func _handle_moving_to_tree(delta):
 	if not is_instance_valid(target_tree):
 		current_state = State.FOLLOWING
@@ -561,12 +562,28 @@ func _handle_moving_to_tree(delta):
 
 	if dist < ATTACK_DIST:
 		velocity = Vector2.ZERO
+		_stuck_timer = 0.0
 		current_state = State.ATTACKING
 		_attack_loop()
 	else:
 		velocity = _navigate_to(target_tree.global_position, SPEED)
 		if velocity.length() > 0:
 			_play_walk_animation(velocity.normalized())
+			_stuck_timer = 0.0
+		else:
+			# Застряли — считаем время
+			_stuck_timer += delta
+			if _stuck_timer > 2.0:
+				# Не можем дойти — пробуем напрямую
+				var dir = global_position.direction_to(target_tree.global_position)
+				velocity = dir * SPEED
+				_play_walk_animation(dir)
+				if _stuck_timer > 4.0:
+					# Совсем не можем — отменяем
+					_stuck_timer = 0.0
+					target_tree = null
+					current_state = State.FOLLOWING
+					show_chat_message("Не могу дойти!")
 		move_and_slide()
 
 func _handle_moving_to_craft(delta):

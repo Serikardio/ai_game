@@ -21,6 +21,7 @@ Inventory="*res://scripts/Inventory.gd"
 NPCInventory="*res://scripts/NPCInventory.gd"
 AudioManager="*res://scripts/AudioManager.gd"
 AIService="*res://scripts/AIService.gd"
+QuestManager="*res://scripts/QuestManager.gd"
 
 [editor_plugins]
 
