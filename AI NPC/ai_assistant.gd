@@ -24,17 +24,15 @@ var current_facing = DOWN
 var is_moving = false
 var is_attacking = false
 
-# Navigation
 var nav_agent: NavigationAgent2D
 
-# Complex Task Data
 var pending_recipe = ""
 var pending_craft_target = null
 var pending_gather_id = ""
 var pending_gather_amount = 0
-var pending_chop_count = 0   # Сколько объектов добыть
-var pending_chop_groups: Array = ["trees"]  # Какие группы искать
-var trees_chopped = 0         # Сколько уже добыли
+var pending_chop_count = 0
+var pending_chop_groups: Array = ["trees"]
+var trees_chopped = 0
 var collect_timer = 0.0
 var _return_state = State.FOLLOWING
 var _enemy_warn_cooldown: float = 0.0
@@ -67,7 +65,6 @@ const RECIPES = {
 	"слиток золота": {"gold": 3},
 }
 
-# Маппинг ресурсов → группы объектов на карте
 const RESOURCE_GROUPS = {
 	"wood": ["trees"],
 	"stone": ["rocks"],
@@ -100,7 +97,6 @@ var _chat_timer: SceneTreeTimer = null
 func _ready():
 	add_to_group("npc")
 
-	# Create NavigationAgent2D
 	nav_agent = NavigationAgent2D.new()
 	nav_agent.path_desired_distance = 4.0
 	nav_agent.target_desired_distance = 4.0
@@ -124,10 +120,8 @@ func _ready():
 	hitbox.area_entered.connect(_on_hitbox_area_entered)
 	hitbox_shape.disabled = true
 
-	# Подключаем ИИ-сервис
 	AIService.response_received.connect(_on_ai_response)
 
-# --- Navigation helper ---
 
 func _navigate_to(target_pos: Vector2, speed: float = SPEED) -> Vector2:
 	nav_agent.target_position = target_pos
@@ -139,7 +133,6 @@ func _navigate_to(target_pos: Vector2, speed: float = SPEED) -> Vector2:
 		return Vector2.ZERO
 	return dir * speed
 
-# --- Command System ---
 
 var command_groups = {
 	"_cmd_gather": ["собери", "получи", "возьми", "добудь", "сруби", "принеси", "намайни"],
@@ -151,13 +144,11 @@ func receive_command(text: String):
 	if text.strip_edges() == "":
 		return
 
-	# Если ИИ доступен — отправляем в GPT
 	if AIService.is_available():
 		show_chat_message("Думаю...")
 		AIService.ask(text)
 		return
 
-	# Фоллбэк — старый парсер по ключевым словам
 	_parse_command_local(text)
 
 
@@ -204,7 +195,6 @@ func _on_ai_response(result: Dictionary):
 			trees_chopped = 0
 			pending_gather_id = ""
 			pending_recipe = ""
-			# Определяем группу по типу цели
 			match target_type:
 				"rock", "stone": pending_chop_groups = ["rocks"]
 				"gold": pending_chop_groups = ["gold_ores"]
@@ -312,7 +302,6 @@ func _give_items_to_player(item_id: String, amount):
 		give_count = mini(int(amount), npc_count)
 	elif typeof(amount) == TYPE_INT:
 		give_count = mini(amount, npc_count)
-	# "all" или другое — отдаём всё
 
 	var item = NPCInventory.get_item(item_id)
 	if item == null:
@@ -334,7 +323,6 @@ func _check_chop_goal():
 	if trees_chopped >= pending_chop_count:
 		pending_chop_count = 0
 		trees_chopped = 0
-		# Подбираем выпавшие бревна
 		if _find_nearby_item():
 			current_state = State.COLLECTING
 			collect_timer = 3.0
@@ -343,7 +331,6 @@ func _check_chop_goal():
 			current_state = State.FOLLOWING
 		return
 
-	# Ищем следующий объект
 	var has_targets = false
 	for group_name in pending_chop_groups:
 		for obj in get_tree().get_nodes_in_group(group_name):
@@ -371,7 +358,6 @@ func _check_gather_goal():
 	if count >= pending_gather_amount:
 		pending_gather_id = ""
 		pending_gather_amount = 0
-		# Если впереди крафт — молчим и идём крафтить
 		if pending_recipe != "":
 			_check_craft_dependencies()
 			return
@@ -401,7 +387,6 @@ func _check_craft_dependencies():
 		_find_craft_spot()
 		return
 
-	# Ищем первый недостающий ресурс
 	var missing_id = "wood"
 	for res_id in requirements:
 		if NPCInventory.get_item_count(res_id) < requirements[res_id]:
@@ -456,14 +441,12 @@ func _is_target_destroyed(obj) -> bool:
 		return obj.is_cut
 	if obj.get("is_mined") != null:
 		return obj.is_mined
-	# Пшеница — считаем "уничтоженной" если не созрела
 	if obj.has_method("can_harvest"):
 		return not obj.can_harvest()
 	if obj.get("is_harvested") != null:
 		return obj.is_harvested
 	return false
 
-# --- Physics / State Machine ---
 
 func _physics_process(delta):
 	if _enemy_warn_cooldown > 0:
@@ -474,7 +457,6 @@ func _physics_process(delta):
 			target_tree = null
 			is_attacking = false
 			hitbox_shape.disabled = true
-			# Считаем срубленное дерево
 			if pending_chop_count > 0:
 				trees_chopped += 1
 				_check_chop_goal()
@@ -484,14 +466,12 @@ func _physics_process(delta):
 			else:
 				current_state = State.FOLLOWING
 
-	# Проверка вражеской цели
 	if current_state == State.ATTACKING_ENEMY:
 		if not is_instance_valid(target_enemy) or target_enemy.is_dead:
 			target_enemy = null
 			is_attacking = false
 			hitbox_shape.disabled = true
 			show_chat_message(_random_phrase(ENEMY_KILLED_PHRASES))
-			# Возвращаемся в предыдущий режим
 			if _return_state == State.GUARDING:
 				current_state = State.GUARDING
 			elif _return_state == State.DEFENDING:
@@ -525,7 +505,6 @@ func _handle_following(delta):
 	if not player:
 		return
 
-	# Защита по умолчанию — если враг близко к игроку, атакуем
 	var enemy = _find_nearest_enemy(player.global_position, ENEMY_DETECT_RANGE)
 	if enemy:
 		if _enemy_warn_cooldown <= 0:
@@ -571,15 +550,12 @@ func _handle_moving_to_tree(delta):
 			_play_walk_animation(velocity.normalized())
 			_stuck_timer = 0.0
 		else:
-			# Застряли — считаем время
 			_stuck_timer += delta
 			if _stuck_timer > 2.0:
-				# Не можем дойти — пробуем напрямую
 				var dir = global_position.direction_to(target_tree.global_position)
 				velocity = dir * SPEED
 				_play_walk_animation(dir)
 				if _stuck_timer > 4.0:
-					# Совсем не можем — отменяем
 					_stuck_timer = 0.0
 					target_tree = null
 					current_state = State.FOLLOWING
@@ -648,7 +624,6 @@ func _handle_collecting(delta):
 				show_chat_message(_random_phrase(DONE_PHRASES))
 				current_state = State.FOLLOWING
 
-# --- Поиск врагов ---
 
 func _find_nearest_enemy(from_pos: Vector2, range: float) -> Node2D:
 	var enemies = get_tree().get_nodes_in_group("enemies")
@@ -669,28 +644,22 @@ func _engage_enemy(enemy: Node2D, return_to: State):
 	current_state = State.ATTACKING_ENEMY
 	_attack_enemy_loop()
 
-# --- Защита (DEFENDING) — следует за игроком + атакует врагов рядом ---
 
 func _handle_defending(delta):
-	# Ищем врага рядом с игроком
 	var enemy = _find_nearest_enemy(player.global_position, ENEMY_DETECT_RANGE)
 	if enemy:
 		_engage_enemy(enemy, State.DEFENDING)
 		return
 
-	# Иначе — просто следуем
 	_handle_following(delta)
 
-# --- Охрана территории (GUARDING) — стоит на месте + атакует врагов ---
 
 func _handle_guarding(delta):
-	# Ищем врага рядом с точкой охраны
 	var enemy = _find_nearest_enemy(guard_position, GUARD_RANGE)
 	if enemy:
 		_engage_enemy(enemy, State.GUARDING)
 		return
 
-	# Возвращаемся на точку охраны
 	var dist = global_position.distance_to(guard_position)
 	if dist > 15.0:
 		velocity = _navigate_to(guard_position, SPEED)
@@ -702,14 +671,12 @@ func _handle_guarding(delta):
 		_play_idle_animation()
 		move_and_slide()
 
-# --- Атака врага ---
 
 func _attack_enemy_loop():
 	while is_instance_valid(target_enemy) and not target_enemy.is_dead and current_state == State.ATTACKING_ENEMY:
 		var dist = global_position.distance_to(target_enemy.global_position)
 
 		if dist > ATTACK_DIST:
-			# Подбегаем к врагу
 			velocity = _navigate_to(target_enemy.global_position, RUN_SPEED)
 			if velocity.length() > 0:
 				_play_walk_animation(velocity.normalized(), true)
@@ -717,7 +684,6 @@ func _attack_enemy_loop():
 			await get_tree().process_frame
 			continue
 
-		# Атакуем
 		velocity = Vector2.ZERO
 		var dir_to = (target_enemy.global_position - global_position).normalized()
 		var attack_dir = _get_dir_enum(dir_to)
@@ -738,7 +704,6 @@ func _on_player_hit_tree(tree):
 		current_state = State.MOVING_TO_TREE
 		show_chat_message(_random_phrase(HELP_PHRASES))
 
-# --- Attack ---
 
 func _attack_loop():
 	while is_instance_valid(target_tree) and not _is_target_destroyed(target_tree) and current_state == State.ATTACKING:
@@ -754,7 +719,6 @@ func _attack_loop():
 
 	is_attacking = false
 	hitbox_shape.disabled = true
-	# Отходим от места добычи чтобы не блокировать дроп
 	if is_instance_valid(target_tree):
 		var retreat_dir = (global_position - target_tree.global_position).normalized()
 		global_position += retreat_dir * 25.0
@@ -792,7 +756,6 @@ func _on_hitbox_area_entered(area):
 	if obj.has_method("take_damage") and obj.is_in_group("enemies"):
 		obj.take_damage(DAMAGE)
 
-# --- Animation ---
 
 func _play_walk_animation(dir: Vector2, is_running: bool = false):
 	if is_attacking:

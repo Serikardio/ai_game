@@ -1,6 +1,5 @@
 extends CanvasLayer
 
-## Вступительная катсцена с диалогом тотемов.
 
 signal cutscene_finished
 
@@ -26,14 +25,12 @@ func _ready():
 	_show_line()
 
 func _build_ui():
-	# Затемнение
 	var dimmer = ColorRect.new()
 	dimmer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	dimmer.color = Color(0, 0, 0, 0.5)
 	dimmer.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(dimmer)
 
-	# Панель диалога внизу
 	panel = PanelContainer.new()
 	panel.anchor_left = 0.1
 	panel.anchor_right = 0.9
@@ -70,7 +67,6 @@ func _build_ui():
 	text_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	vbox.add_child(text_label)
 
-	# Подсказка "Нажми пробел"
 	skip_label = Label.new()
 	skip_label.text = "[ Пробел — продолжить ]"
 	skip_label.add_theme_font_size_override("font_size", 10)
@@ -101,7 +97,6 @@ func _unhandled_input(event):
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_SPACE or event.keycode == KEY_ENTER:
 			if is_typing:
-				# Скип печати — показать всё сразу
 				text_label.visible_ratio = 1.0
 				is_typing = false
 			else:

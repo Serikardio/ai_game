@@ -20,12 +20,10 @@ func _ready():
 	$Area2D.body_entered.connect(_on_body_entered)
 	$Area2D.body_exited.connect(_on_body_exited)
 
-	# Hide ALL old child visuals
 	for child in get_children():
 		if child.name in ["WoodIcon", "CountLabel", "Frame"]:
 			child.visible = false
 
-	# Ghost campfire — first frame, centered
 	ghost_campfire = Sprite2D.new()
 	var atlas = AtlasTexture.new()
 	atlas.atlas = CAMPFIRE_SHEET
@@ -35,7 +33,6 @@ func _ready():
 	ghost_campfire.modulate = Color(1, 1, 1, 0.25)
 	add_child(ghost_campfire)
 
-	# Recipe slots — one on each side of the campfire
 	_create_recipe_ui()
 
 func _create_recipe_ui():
@@ -45,17 +42,14 @@ func _create_recipe_ui():
 
 	var positions = [Vector2(-24, -8), Vector2(20, -8)]
 	for i in range(REQUIRED_AMOUNT):
-		# Slot background
 		var bg = Sprite2D.new()
 		bg.position = positions[i]
 		recipe_ui.add_child(bg)
 
-		# Draw slot frame via a small Node2D with _draw
 		var frame = _create_slot_frame()
 		frame.position = positions[i]
 		recipe_ui.add_child(frame)
 
-		# Wood icon inside
 		var icon = Sprite2D.new()
 		icon.texture = WOOD_ICON
 		icon.scale = Vector2(0.6, 0.6)

@@ -1,11 +1,9 @@
 extends Node2D
 
-## NPC-тотем, выдающий квесты игроку.
-## Подойди и нажми E чтобы взять/сдать квест.
 
 @export var totem_name: String = "Тотем"
-@export var quest_item_id: String = "gold"       # Что нужно собрать
-@export var quest_amount: int = 3                  # Сколько
+@export var quest_item_id: String = "gold"
+@export var quest_amount: int = 3
 @export var quest_description: String = "Принеси мне 3 золота"
 @export var quest_reward_text: String = "Спасибо! Вот твоя награда."
 
@@ -23,7 +21,6 @@ func _ready():
 	_create_ui()
 
 func _create_ui():
-	# Подсказка "E" — как у предметов
 	var prompt_panel = PanelContainer.new()
 	prompt_panel.visible = false
 	prompt_panel.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
@@ -56,7 +53,6 @@ func _create_ui():
 	add_child(prompt_panel)
 	prompt_label = prompt_panel
 
-	# Имя тотема над головой
 	var name_label = Label.new()
 	name_label.text = totem_name
 	name_label.position = Vector2(-50, -26)
@@ -67,7 +63,6 @@ func _create_ui():
 	name_label.custom_minimum_size = Vector2(200, 0)
 	add_child(name_label)
 
-	# Чат — как у NPC
 	chat_label = Label.new()
 	chat_label.visible = false
 	chat_label.position = Vector2(-50, -40)
@@ -99,7 +94,6 @@ func _interact():
 		_show_message("Вы свободны! Отличная работа!")
 		return
 
-	# Пробуем принять предметы
 	var delivered = QuestManager.deliver_items()
 	if delivered.size() > 0:
 		_show_message("Принято: " + ", ".join(delivered))

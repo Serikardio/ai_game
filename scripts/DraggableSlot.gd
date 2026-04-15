@@ -1,11 +1,8 @@
 extends PanelContainer
 
-## Hotbar slot that supports drag-and-drop.
-## Drag = whole stack. Ctrl+Drag = half stack.
-## Double-click = use item (eat wheat etc.)
 
 const EDIBLE_ITEMS = {
-	"wheat": 20,  # item_id: heal_amount
+	"wheat": 20,
 }
 
 func _gui_input(event):
@@ -34,7 +31,6 @@ func _get_drag_data(_at_position):
 	if Input.is_key_pressed(KEY_CTRL):
 		quantity = ceili(total / 2.0)
 
-	# Build drag preview
 	var preview = TextureRect.new()
 	var icon_rect = get_node_or_null("Icon")
 	if icon_rect and icon_rect.texture:
@@ -44,7 +40,6 @@ func _get_drag_data(_at_position):
 		preview.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	set_drag_preview(preview)
 
-	# Activate world drop zone
 	var zones = get_tree().get_nodes_in_group("world_drop_zone")
 	if zones.size() > 0:
 		zones[0].activate()
@@ -66,13 +61,11 @@ func _drop_data(_at_position, data):
 	if item_id == "":
 		return
 
-	# Same inventory — swap slots
 	if drag_source == my_source:
 		var inv = Inventory if my_source == "player" else NPCInventory
 		inv.swap_slots(from_slot, to_slot)
 		return
 
-	# Different inventories — transfer
 	var from_inv = Inventory if drag_source == "player" else NPCInventory
 	var to_inv = NPCInventory if drag_source == "player" else Inventory
 	var item = from_inv.get_item(item_id)

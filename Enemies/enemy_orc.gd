@@ -126,19 +126,16 @@ func _start_attack():
 	hitbox_shape.disabled = true
 	_position_hitbox()
 	_play_attack()
-	# Замах (кадры 0-2)
 	await get_tree().create_timer(0.25).timeout
 	if is_dead:
 		is_attacking = false
 		return
-	# Удар (кадры 3-5)
 	hitbox_shape.disabled = false
 	await get_tree().create_timer(0.25).timeout
 	hitbox_shape.disabled = true
 	if is_dead:
 		is_attacking = false
 		return
-	# Откат (кадры 6-7)
 	await anim.animation_finished
 	is_attacking = false
 	if is_dead:
@@ -176,7 +173,6 @@ func _die():
 	velocity = Vector2.ZERO
 	_play_death()
 	await anim.animation_finished
-	# Fade out
 	var tween = create_tween()
 	tween.tween_property(self, "modulate:a", 0.0, 1.0)
 	await tween.finished

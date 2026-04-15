@@ -1,7 +1,5 @@
 extends Node
 
-## Глобальный менеджер квестов.
-## Предметы нужно ПРИНЕСТИ тотемам, а не просто собрать.
 
 signal quest_updated
 
@@ -19,7 +17,6 @@ func start_quest():
 	quest_active = true
 	quest_updated.emit()
 
-## Игрок сдаёт предметы тотему. Возвращает что принял.
 func deliver_items() -> Array[String]:
 	if not quest_active or quest_complete:
 		return []

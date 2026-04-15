@@ -1,9 +1,7 @@
 extends Node
 
-# --- Музыка (загружаем через load, чтобы не крашить если файл не импортирован) ---
 var MUSIC_ARIA_MATH: AudioStream
 
-# --- SFX ---
 const SFX_WOOD_HIT = preload("res://assets/sounds/wood2.mp3")
 
 var music_player: AudioStreamPlayer
@@ -11,17 +9,14 @@ var _sfx_pool: Array[AudioStreamPlayer] = []
 const SFX_POOL_SIZE = 8
 
 func _ready():
-	# Загружаем музыку
 	MUSIC_ARIA_MATH = load("res://assets/sounds/aria_math.mp3")
 	if MUSIC_ARIA_MATH == null:
 		push_warning("AudioManager: не удалось загрузить aria_math.mp3 — откройте проект в редакторе для импорта")
 
-	# Музыкальный плеер
 	music_player = AudioStreamPlayer.new()
 	music_player.bus = &"Music"
 	add_child(music_player)
 
-	# Пул для звуковых эффектов
 	for i in SFX_POOL_SIZE:
 		var p = AudioStreamPlayer.new()
 		p.bus = &"SFX"
@@ -59,7 +54,6 @@ func play_sfx(stream: AudioStream, volume_db: float = 0.0, pitch_variance: float
 				p.pitch_scale = 1.0
 			p.play()
 			return
-	# Все заняты — перезапускаем первый
 	_sfx_pool[0].stream = stream
 	_sfx_pool[0].volume_db = volume_db
 	_sfx_pool[0].play()

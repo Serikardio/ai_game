@@ -1,7 +1,5 @@
 extends Control
 
-## Панель крафта слева на экране.
-## Показывает доступные рецепты, подсвечивает если хватает ресурсов.
 
 const RECIPES = [
 	{
@@ -59,7 +57,6 @@ func _build_ui():
 	vbox.add_theme_constant_override("separation", 4)
 	panel.add_child(vbox)
 
-	# Заголовок
 	var title = Label.new()
 	title.text = "Крафт"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -96,7 +93,6 @@ func _create_recipe_button(recipe: Dictionary) -> Button:
 	style_hover.corner_radius_bottom_right = 4
 	btn.add_theme_stylebox_override("hover", style_hover)
 
-	# Иконка
 	var tex_rect = TextureRect.new()
 	tex_rect.custom_minimum_size = Vector2(40, 40)
 	tex_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -113,7 +109,6 @@ func _create_recipe_button(recipe: Dictionary) -> Button:
 
 	btn.add_child(tex_rect)
 
-	# Центрируем иконку
 	tex_rect.anchor_left = 0.5
 	tex_rect.anchor_top = 0.5
 	tex_rect.offset_left = -20
@@ -134,23 +129,19 @@ func _ingredients_text(ingredients: Dictionary) -> String:
 	return " + ".join(parts)
 
 func _on_craft_pressed(recipe: Dictionary):
-	# Проверяем ресурсы
 	for item_id in recipe.ingredients:
 		if Inventory.get_item_count(item_id) < recipe.ingredients[item_id]:
 			return
 
-	# Забираем ресурсы
 	for item_id in recipe.ingredients:
 		Inventory.remove_item(item_id, recipe.ingredients[item_id])
 
-	# Костёр — ставим в мир рядом с игроком
 	if recipe.result_id == "campfire":
 		var player = get_tree().get_first_node_in_group("player")
 		if player:
 			var campfire = load("res://camp_fire.tscn").instantiate()
 			player.get_parent().add_child(campfire)
 			campfire.global_position = player.global_position + Vector2(40, 0)
-			# Проверяем — костёр рядом с тотемами?
 			_check_campfire_near_totems(campfire.global_position)
 	elif recipe.has("result_item") and recipe.result_item != null:
 		Inventory.add_item(recipe.result_item)

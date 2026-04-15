@@ -3,13 +3,10 @@ extends Node2D
 @onready var animP = $AnimationPlayer
 
 func _ready():
-	# Y-sort so characters hide behind trees correctly
 	y_sort_enabled = true
 
-	# Фоновая музыка
 	AudioManager.play_music(AudioManager.MUSIC_ARIA_MATH, -25.0)
 
-	# Add world drop zone (catches items dragged outside any hotbar)
 	var drop_layer = CanvasLayer.new()
 	drop_layer.name = "WorldDropZoneLayer"
 	drop_layer.layer = 0
@@ -20,7 +17,6 @@ func _ready():
 	drop_zone.set_script(preload("res://scripts/WorldDropZone.gd"))
 	drop_layer.add_child(drop_zone)
 
-	# Панель крафта
 	var craft_layer = CanvasLayer.new()
 	craft_layer.name = "CraftingLayer"
 	craft_layer.layer = 1
@@ -33,7 +29,6 @@ func _ready():
 	craft_panel.set_script(preload("res://scripts/CraftingPanel.gd"))
 	craft_layer.add_child(craft_panel)
 
-	# Трекер квестов
 	var quest_layer = CanvasLayer.new()
 	quest_layer.name = "QuestLayer"
 	quest_layer.layer = 1
@@ -46,12 +41,10 @@ func _ready():
 	tracker.set_script(preload("res://scripts/QuestTracker.gd"))
 	quest_layer.add_child(tracker)
 
-	# Вступительная катсцена
 	var cutscene = CanvasLayer.new()
 	cutscene.set_script(preload("res://scripts/IntroCutscene.gd"))
 	add_child(cutscene)
 
-	# Navigation setup — bake navmesh from static colliders
 	_setup_navigation()
 
 func _setup_navigation():
@@ -60,13 +53,11 @@ func _setup_navigation():
 	var nav_poly = NavigationPolygon.new()
 	nav_poly.agent_radius = 12.0
 
-	# Walkable boundary (whole map)
 	var outer = PackedVector2Array([
 		Vector2(5, 5), Vector2(3900, 5),
 		Vector2(3900, 2380), Vector2(5, 2380)
 	])
 
-	# Fence obstacle (from CollisionPolygon2D2 in the scene)
 	var fence = PackedVector2Array([
 		Vector2(2686, 1692), Vector2(2686, 1636), Vector2(1992, 1637),
 		Vector2(1988, 2377), Vector2(1988, 2383), Vector2(3901, 2382),
@@ -82,7 +73,6 @@ func _setup_navigation():
 	source_geo.add_traversable_outline(outer)
 	source_geo.add_obstruction_outline(fence)
 
-	# Автоматически добавляем все StaticBody как препятствия
 	for body in _find_all_static_bodies(self):
 		var shape_node = null
 		for child in body.get_children():
@@ -96,7 +86,7 @@ func _setup_navigation():
 		if shape is RectangleShape2D:
 			var pos = body.global_position + shape_node.position
 			var s = shape.size * 0.5
-			var margin = 8.0  # Отступ чтобы NPC не впритык ходил
+			var margin = 8.0
 			var obstacle = PackedVector2Array([
 				pos + Vector2(-s.x - margin, -s.y - margin),
 				pos + Vector2(s.x + margin, -s.y - margin),

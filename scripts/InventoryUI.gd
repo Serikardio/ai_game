@@ -4,13 +4,10 @@ extends Control
 @onready var item_template = $Panel/VBoxContainer/ItemTemplate
 
 func _ready():
-	# Hide template at start
 	item_template.visible = false
 
-	# Connect to inventory signal
 	Inventory.inventory_changed.connect(refresh_ui)
 
-	# Initial hide
 	visible = false
 
 	refresh_ui()
@@ -22,7 +19,6 @@ func _input(event):
 			refresh_ui()
 
 func refresh_ui():
-	# Clear existing items except template
 	for child in container.get_children():
 		if child != item_template:
 			child.queue_free()
@@ -36,7 +32,6 @@ func refresh_ui():
 		slot.visible = true
 		container.add_child(slot)
 
-		# Set text and icon
 		var name_label = slot.get_node("NameLabel")
 		var count_label = slot.get_node("CountLabel")
 		var icon_rect = slot.get_node("Icon")

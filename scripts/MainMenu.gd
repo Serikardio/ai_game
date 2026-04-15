@@ -10,7 +10,6 @@ extends Control
 
 func _ready():
 	settings_panel.visible = false
-	# Load saved settings
 	_load_settings()
 
 func _on_play_pressed():
@@ -23,7 +22,6 @@ func _on_settings_pressed():
 func _on_quit_pressed():
 	get_tree().quit()
 
-# --- Settings ---
 
 func _on_back_pressed():
 	settings_panel.visible = false
@@ -68,7 +66,6 @@ func _load_settings():
 		music_slider.value = config.get_value("audio", "music", 80)
 		sfx_slider.value = config.get_value("audio", "sfx", 80)
 		fullscreen_check.button_pressed = config.get_value("video", "fullscreen", false)
-		# Apply loaded values
 		_on_master_slider_value_changed(master_slider.value)
 		_on_music_slider_value_changed(music_slider.value)
 		_on_sfx_slider_value_changed(sfx_slider.value)

@@ -1,14 +1,12 @@
 extends Node
 
-## Сервис для общения с Groq API (Llama).
-## Принимает текст игрока, возвращает структурированный ответ NPC.
 
 signal response_received(result: Dictionary)
 
 var _api_key: String = ""
 var _http: HTTPRequest
 var _chat_history: Array = []
-const MAX_HISTORY = 10  # Помним последние 10 сообщений (5 пар)
+const MAX_HISTORY = 10
 
 const API_URL = "https://api.groq.com/openai/v1/chat/completions"
 const MODEL = "llama-3.3-70b-versatile"
@@ -88,7 +86,6 @@ func ask(player_text: String):
 		response_received.emit({"error": "no_key"})
 		return
 
-	# Добавляем сообщение игрока в историю
 	_chat_history.append({"role": "user", "content": player_text})
 
 	var headers = [
@@ -96,7 +93,6 @@ func ask(player_text: String):
 		"Authorization: Bearer " + _api_key
 	]
 
-	# Собираем сообщения: системный промпт + вся история
 	var messages = [{"role": "system", "content": SYSTEM_PROMPT}]
 	messages.append_array(_chat_history)
 
@@ -128,7 +124,6 @@ func _on_response(_result, response_code, _headers, body):
 	var data = json.data
 	var content = data["choices"][0]["message"]["content"]
 
-	# Убираем markdown обёртку если модель добавила ```json ... ```
 	content = content.strip_edges()
 	if content.begins_with("```"):
 		var lines = content.split("\n")
@@ -137,15 +132,12 @@ func _on_response(_result, response_code, _headers, body):
 			lines.remove_at(lines.size() - 1)
 		content = "\n".join(lines)
 
-	# Парсим JSON-ответ
 	var inner = JSON.new()
 	if inner.parse(content) != OK:
 		response_received.emit({"action": "chat", "speech": content})
 		return
 
-	# Сохраняем ответ в историю
 	_chat_history.append({"role": "assistant", "content": content})
-	# Обрезаем если слишком длинная
 	while _chat_history.size() > MAX_HISTORY:
 		_chat_history.remove_at(0)
 

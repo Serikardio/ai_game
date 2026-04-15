@@ -1,6 +1,6 @@
 extends Node2D
 
-const HEAL_RATE = 2.0  # HP в секунду
+const HEAL_RATE = 2.0
 const HEAL_RANGE = 50.0
 
 var player: Node2D = null

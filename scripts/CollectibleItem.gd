@@ -15,7 +15,6 @@ func _ready():
 	body_exited.connect(_on_body_exited)
 	_bob_time = randf() * TAU
 
-	# Ищем спрайт: сначала соседа в родителе (Wood.tscn), потом дочерний (CollectibleItem.tscn)
 	if get_parent():
 		for child in get_parent().get_children():
 			if child is Sprite2D and child.name != "shadow":
@@ -35,7 +34,6 @@ func _ready():
 		if sprite_node:
 			sprite_node.texture = item.icon
 
-	# Задержка перед возможностью подбора (чтобы выброшенные предметы не подбирались сразу)
 	await get_tree().create_timer(0.5).timeout
 	_pickup_ready = true
 	for body in get_overlapping_bodies():
@@ -49,7 +47,6 @@ func _process(delta):
 
 func _input(event):
 	if overlapping_player and event.is_action_pressed("Use"):
-		# Принудительно заставляем только ОДИН предмет откликнуться на нажатие
 		if not get_viewport().is_input_handled():
 			_do_pickup(overlapping_player)
 			get_viewport().set_input_as_handled()

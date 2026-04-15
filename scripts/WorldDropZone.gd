@@ -1,14 +1,10 @@
 extends Control
 
-## Full-screen invisible control that catches drag-and-drop events
-## that miss all hotbar panels. Spawns a CollectibleItem in the world
-## near the player.
 
 var collectible_scene: PackedScene = preload("res://scenes/CollectibleItem.tscn")
 
 func _ready():
 	add_to_group("world_drop_zone")
-	# Explicitly set full-screen size (anchors may not work under CanvasLayer)
 	anchor_left = 0.0
 	anchor_top = 0.0
 	anchor_right = 1.0
@@ -17,7 +13,7 @@ func _ready():
 	offset_top = 0
 	offset_right = 0
 	offset_bottom = 0
-	mouse_filter = Control.MOUSE_FILTER_IGNORE # don't interfere normally
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func activate():
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -36,7 +32,6 @@ func _drop_data(_at_position, data):
 
 	var quantity = data.get("quantity", 1)
 
-	# Get the item resource from the correct inventory
 	var item: Item = null
 	if source == "player":
 		item = Inventory.get_item(item_id)
@@ -50,7 +45,6 @@ func _drop_data(_at_position, data):
 	if item == null:
 		return
 
-	# Spawn collectibles near the source character
 	for i in range(quantity):
 		_spawn_collectible(item, source)
 
@@ -80,14 +74,12 @@ func _spawn_collectible(item: Item, source: String = "player"):
 	wrapper.scale = Vector2.ONE
 
 	var tween = wrapper.create_tween()
-	# Hop 1: fly to landing spot with arc (Y goes up then down)
 	tween.tween_method(func(t: float):
 		var pos = spawn_pos.lerp(land_pos, t)
 		pos.y -= sin(t * PI) * jump_height
 		wrapper.global_position = pos
 	, 0.0, 1.0, 0.3).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 
-	# Hop 2: small bounce
 	var bounce_offset = Vector2(randf_range(-10, 10), randf_range(-5, 5))
 	var bounce_pos = land_pos + bounce_offset
 	tween.tween_method(func(t: float):

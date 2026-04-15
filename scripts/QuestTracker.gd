@@ -1,6 +1,5 @@
 extends Control
 
-## UI трекер активного квеста — показывается под HP/стаминой.
 
 var labels: Dictionary = {}
 var title_label: Label
