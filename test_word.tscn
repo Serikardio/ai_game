@@ -932,7 +932,7 @@ layer_3/name = "Layer3"
 position = Vector2(2381, 1265)
 
 [node name="Camera2D" type="Camera2D" parent="player"]
-zoom = Vector2(2.5, 2.5)
+zoom = Vector2(3.5, 3.5)
 limit_left = 0
 limit_top = 0
 limit_right = 3903

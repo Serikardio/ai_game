@@ -3,6 +3,7 @@ extends Node
 signal inventory_changed
 
 const SLOT_COUNT = 6
+const MAX_STACK = 10
 var slots: Array = []
 
 func _init():
@@ -18,12 +19,12 @@ func add_item(item, to_slot: int = -1):
 			slots[to_slot] = {"item": item, "quantity": 1}
 			emit_signal("inventory_changed")
 			return
-		elif slots[to_slot].item.id == item.id:
+		elif slots[to_slot].item.id == item.id and slots[to_slot].quantity < MAX_STACK:
 			slots[to_slot].quantity += 1
 			emit_signal("inventory_changed")
 			return
 	for i in range(SLOT_COUNT):
-		if slots[i] != null and slots[i].item.id == item.id:
+		if slots[i] != null and slots[i].item.id == item.id and slots[i].quantity < MAX_STACK:
 			slots[i].quantity += 1
 			emit_signal("inventory_changed")
 			return
