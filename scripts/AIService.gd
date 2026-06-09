@@ -8,6 +8,12 @@ var _http: HTTPRequest
 var _chat_history: Array = []
 const MAX_HISTORY = 10
 
+const MEMORY_PATH = "user://ai_memory.json"
+const MEMORY_MAX = 500
+const RECALL_THRESHOLD = 0.55
+var _memory: Array = []
+var _last_query: String = ""
+
 const API_URL = "https://api.groq.com/openai/v1/chat/completions"
 const MODEL = "llama-3.3-70b-versatile"
 
@@ -70,6 +76,7 @@ func _ready():
 	add_child(_http)
 	_http.request_completed.connect(_on_response)
 	_load_api_key()
+	_load_memory()
 
 func _load_api_key():
 	var config = ConfigFile.new()
@@ -82,6 +89,7 @@ func is_available() -> bool:
 	return _api_key != "" and _api_key != "ВСТАВЬ_СЮДА_КЛЮЧ"
 
 func ask(player_text: String):
+	_last_query = player_text
 	if not is_available():
 		response_received.emit({"error": "no_key"})
 		return
@@ -142,4 +150,111 @@ func _on_response(_result, response_code, _headers, body):
 		_chat_history.remove_at(0)
 
 	print("AI response: ", inner.data)
+	_learn(_last_query, inner.data)
 	response_received.emit(inner.data)
+
+
+
+func _learn(query: String, response: Dictionary):
+	if query.strip_edges() == "" or not response is Dictionary:
+		return
+	if not response.has("action"):
+		return
+	var stems = _stems(query)
+	if stems.is_empty():
+		return
+	for entry in _memory:
+		if entry.get("stems", []) == stems:
+			entry["response"] = response.duplicate(true)
+			_save_memory()
+			return
+	_memory.append({"stems": stems, "response": response.duplicate(true)})
+	while _memory.size() > MEMORY_MAX:
+		_memory.remove_at(0)
+	_save_memory()
+	print("AIService: запомнил (", _memory.size(), " записей): ", query)
+
+
+func recall(query: String) -> Dictionary:
+	if _memory.is_empty():
+		return {}
+	var q_stems = _stems(query)
+	if q_stems.is_empty():
+		return {}
+
+	var best_score := 0.0
+	var best: Dictionary = {}
+	for entry in _memory:
+		var score = _similarity(q_stems, entry.get("stems", []))
+		if score > best_score:
+			best_score = score
+			best = entry.get("response", {})
+
+	if best_score < RECALL_THRESHOLD or best.is_empty():
+		return {}
+
+	var result = best.duplicate(true)
+	var num = _first_number(query)
+	if num >= 0 and result.has("amount") and typeof(result["amount"]) != TYPE_STRING:
+		result["amount"] = num
+	print("AIService: вспомнил (", best_score, "): ", result)
+	return result
+
+
+func _similarity(a: Array, b: Array) -> float:
+	if a.is_empty() or b.is_empty():
+		return 0.0
+	var inter := 0
+	for s in a:
+		if s in b:
+			inter += 1
+	var union = a.size() + b.size() - inter
+	return float(inter) / float(union) if union > 0 else 0.0
+
+
+func _stems(text: String) -> Array:
+	var lower = text.to_lower()
+	var clean = ""
+	for ch in lower:
+		if ch.is_valid_int() or ch == " ":
+			clean += " "
+		elif ch == "," or ch == "." or ch == "!" or ch == "?" or ch == ":" or ch == ";":
+			clean += " "
+		else:
+			clean += ch
+	var stems := []
+	for word in clean.split(" ", false):
+		if word.length() == 0:
+			continue
+		var stem = word.substr(0, 4) if word.length() > 4 else word
+		if stem not in stems:
+			stems.append(stem)
+	stems.sort()
+	return stems
+
+
+func _first_number(text: String) -> int:
+	for word in text.split(" ", false):
+		if word.is_valid_int():
+			return word.to_int()
+	return -1
+
+
+func _save_memory():
+	var f = FileAccess.open(MEMORY_PATH, FileAccess.WRITE)
+	if f:
+		f.store_string(JSON.stringify(_memory))
+		f.close()
+
+
+func _load_memory():
+	if not FileAccess.file_exists(MEMORY_PATH):
+		return
+	var f = FileAccess.open(MEMORY_PATH, FileAccess.READ)
+	if not f:
+		return
+	var json = JSON.new()
+	if json.parse(f.get_as_text()) == OK and json.data is Array:
+		_memory = json.data
+	f.close()
+	print("AIService: загружено выученных команд: ", _memory.size())

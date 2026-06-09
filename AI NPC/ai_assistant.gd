@@ -36,6 +36,7 @@ var trees_chopped = 0
 var collect_timer = 0.0
 var _return_state = State.FOLLOWING
 var _enemy_warn_cooldown: float = 0.0
+var _last_command: String = ""
 
 var max_health: int = 100
 var health: int = 100
@@ -153,12 +154,18 @@ func receive_command(text: String):
 	if text.strip_edges() == "":
 		return
 
+	_last_command = text
+
 	if AIService.is_available():
 		show_chat_message("Думаю...")
 		AIService.ask(text)
 		return
 
-	_parse_command_local(text)
+	var learned = AIService.recall(text)
+	if not learned.is_empty():
+		_on_ai_response(learned)
+	else:
+		_parse_command_local(text)
 
 
 func _parse_command_local(text: String):
@@ -186,8 +193,12 @@ func _parse_command_local(text: String):
 func _on_ai_response(result: Dictionary):
 	if result.has("error"):
 		print("AI error: ", result)
-		show_chat_message("Связь потеряна... Повтори команду!")
-		return
+		var learned = AIService.recall(_last_command)
+		if not learned.is_empty():
+			result = learned
+		else:
+			_parse_command_local(_last_command)
+			return
 
 	var action = result.get("action", "chat")
 	var speech = result.get("speech", "...")
