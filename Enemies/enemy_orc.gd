@@ -21,12 +21,17 @@ var _idle_timer: float = 0.0
 var _retreat_timer: float = 0.0
 var is_dead: bool = false
 var is_attacking: bool = false
+var _aware: bool = false
+var _aggro_cd: float = 0.0
 
 const RETREAT_TIME = 0.7
 const HURT_STUN_TIME = 0.25
 
+const AGGRO_PHRASES = ["Агрх!", "Уааа!", "Уга-буга!", "Гррр!", "Чужак!", "Хрясь!", "Р-р-рав!"]
+
 @onready var anim: AnimatedSprite2D = $AnimatedSprite2D
 @onready var hitbox_shape: CollisionShape2D = $"Hit-box/CollisionShape2D"
+var chat_label: Label
 
 func _ready():
 	add_to_group("enemies")
@@ -35,10 +40,42 @@ func _ready():
 	patrol_target = home_position
 	hitbox_shape.disabled = true
 	_idle_timer = randf_range(1.0, 3.0)
+	_create_chat_label()
+
+func _create_chat_label():
+	chat_label = Label.new()
+	chat_label.visible = false
+	chat_label.position = Vector2(-40, -42)
+	chat_label.scale = Vector2(0.5, 0.5)
+	chat_label.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	chat_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	chat_label.custom_minimum_size = Vector2(160, 0)
+	chat_label.add_theme_color_override("font_color", Color(1, 0.45, 0.35))
+	chat_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	chat_label.add_theme_constant_override("outline_size", 6)
+	add_child(chat_label)
+
+func _bark():
+	if _aggro_cd > 0:
+		return
+	_aggro_cd = 4.0
+	_show_bark(AGGRO_PHRASES[randi() % AGGRO_PHRASES.size()])
+
+func _show_bark(text: String):
+	if not is_instance_valid(chat_label):
+		return
+	chat_label.text = text
+	chat_label.visible = true
+	await get_tree().create_timer(1.3).timeout
+	if is_instance_valid(chat_label):
+		chat_label.visible = false
 
 func _physics_process(delta):
 	if is_dead:
 		return
+
+	if _aggro_cd > 0:
+		_aggro_cd -= delta
 
 	_find_target()
 
@@ -75,6 +112,9 @@ func _find_target():
 			nearest = c
 
 	if nearest and nearest_dist <= detection_range:
+		if not _aware:
+			_aware = true
+			_bark()  # реплика в момент обнаружения цели
 		target = nearest
 		if nearest_dist <= attack_range:
 			current_state = State.ATTACK
@@ -83,6 +123,7 @@ func _find_target():
 			current_state = State.CHASE
 	else:
 		target = null
+		_aware = false
 		if current_state == State.CHASE:
 			current_state = State.IDLE
 			_idle_timer = randf_range(1.0, 3.0)

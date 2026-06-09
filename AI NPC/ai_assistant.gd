@@ -157,7 +157,7 @@ func receive_command(text: String):
 	_last_command = text
 
 	if AIService.is_available():
-		show_chat_message("Думаю...")
+		show_chat_message("...")
 		AIService.ask(text)
 		return
 
