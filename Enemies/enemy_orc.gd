@@ -1,6 +1,6 @@
 extends CharacterBody2D
 
-enum State { IDLE, PATROL, CHASE, ATTACK, HURT, DEAD }
+enum State { IDLE, PATROL, CHASE, ATTACK, HURT, RETREAT, DEAD }
 enum { DOWN_RIGHT, UP_RIGHT, DOWN_LEFT, UP_LEFT }
 
 @export var max_health: int = 50
@@ -18,8 +18,12 @@ var target: Node2D = null
 var home_position: Vector2
 var patrol_target: Vector2
 var _idle_timer: float = 0.0
+var _retreat_timer: float = 0.0
 var is_dead: bool = false
 var is_attacking: bool = false
+
+const RETREAT_TIME = 0.7
+const HURT_STUN_TIME = 0.25
 
 @onready var anim: AnimatedSprite2D = $AnimatedSprite2D
 @onready var hitbox_shape: CollisionShape2D = $"Hit-box/CollisionShape2D"
@@ -31,8 +35,6 @@ func _ready():
 	patrol_target = home_position
 	hitbox_shape.disabled = true
 	_idle_timer = randf_range(1.0, 3.0)
-	$"Hit-box".area_entered.connect(_on_hitbox_area_entered)
-	$"Hit-box".body_entered.connect(_on_hitbox_body_entered)
 
 func _physics_process(delta):
 	if is_dead:
@@ -47,6 +49,8 @@ func _physics_process(delta):
 			_handle_patrol()
 		State.CHASE:
 			_handle_chase()
+		State.RETREAT:
+			_handle_retreat(delta)
 		State.ATTACK:
 			pass
 		State.HURT:
@@ -55,24 +59,33 @@ func _physics_process(delta):
 	move_and_slide()
 
 func _find_target():
-	if is_attacking or current_state == State.ATTACK or current_state == State.HURT or current_state == State.DEAD:
+	if is_attacking or current_state in [State.ATTACK, State.HURT, State.RETREAT, State.DEAD]:
 		return
-	var players = get_tree().get_nodes_in_group("player")
-	if players.size() > 0:
-		var player = players[0]
-		var dist = global_position.distance_to(player.global_position)
-		if dist <= detection_range:
-			target = player
-			if dist <= attack_range:
-				current_state = State.ATTACK
-				_start_attack()
-			else:
-				current_state = State.CHASE
+	var candidates = get_tree().get_nodes_in_group("player") + get_tree().get_nodes_in_group("npc")
+	var nearest: Node2D = null
+	var nearest_dist := INF
+	for c in candidates:
+		if not is_instance_valid(c):
+			continue
+		if "is_dead" in c and c.is_dead:
+			continue
+		var d = global_position.distance_to(c.global_position)
+		if d < nearest_dist:
+			nearest_dist = d
+			nearest = c
+
+	if nearest and nearest_dist <= detection_range:
+		target = nearest
+		if nearest_dist <= attack_range:
+			current_state = State.ATTACK
+			_start_attack()
 		else:
-			target = null
-			if current_state == State.CHASE:
-				current_state = State.IDLE
-				_idle_timer = randf_range(1.0, 3.0)
+			current_state = State.CHASE
+	else:
+		target = null
+		if current_state == State.CHASE:
+			current_state = State.IDLE
+			_idle_timer = randf_range(1.0, 3.0)
 
 func _handle_idle(delta):
 	velocity = Vector2.ZERO
@@ -131,6 +144,10 @@ func _start_attack():
 		is_attacking = false
 		return
 	hitbox_shape.disabled = false
+	if target and is_instance_valid(target) and target.has_method("take_damage"):
+		if not ("is_dead" in target and target.is_dead):
+			if global_position.distance_to(target.global_position) <= attack_range + 12.0:
+				target.take_damage(damage)
 	await get_tree().create_timer(0.25).timeout
 	hitbox_shape.disabled = true
 	if is_dead:
@@ -140,7 +157,26 @@ func _start_attack():
 	is_attacking = false
 	if is_dead:
 		return
-	current_state = State.CHASE
+	if current_state == State.HURT:
+		return
+	_start_retreat()
+
+func _start_retreat():
+	_retreat_timer = RETREAT_TIME
+	current_state = State.RETREAT
+
+func _handle_retreat(delta):
+	_retreat_timer -= delta
+	if target == null or not is_instance_valid(target):
+		current_state = State.IDLE
+		velocity = Vector2.ZERO
+		return
+	var away = target.global_position.direction_to(global_position)
+	velocity = away * speed
+	_update_facing(-away)
+	_play_walk()
+	if _retreat_timer <= 0:
+		current_state = State.CHASE
 
 func _position_hitbox():
 	match idle_dir:
@@ -154,16 +190,18 @@ func take_damage(amount: int):
 	if is_dead:
 		return
 	health -= amount
-	is_attacking = false
-	hitbox_shape.disabled = true
+	AudioManager.play_sfx(AudioManager.SFX_WOOD_HIT, 0.0, 0.2)
 	_flash()
 	if health <= 0:
 		_die()
-	else:
+		return
+	if current_state != State.HURT:
+		is_attacking = false
+		hitbox_shape.disabled = true
 		current_state = State.HURT
 		_play_hurt()
-		await anim.animation_finished
-		if not is_dead:
+		await get_tree().create_timer(HURT_STUN_TIME).timeout
+		if not is_dead and current_state == State.HURT:
 			current_state = State.CHASE
 
 func _die():
@@ -236,12 +274,3 @@ func _play_death():
 		UP_RIGHT:   anim.play("death_up_right")
 		DOWN_LEFT:  anim.play("death_down_left")
 		UP_LEFT:    anim.play("death_up_left")
-
-func _on_hitbox_area_entered(area):
-	var body = area.get_parent()
-	if body.is_in_group("player") and body.has_method("take_damage"):
-		body.take_damage(damage)
-
-func _on_hitbox_body_entered(body):
-	if body.is_in_group("player") and body.has_method("take_damage"):
-		body.take_damage(damage)

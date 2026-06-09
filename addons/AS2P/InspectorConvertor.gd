@@ -5,10 +5,8 @@ const NodeSelectorProperty = preload("./NodeSelectorProperty.gd")
 
 var node_selector: NodeSelectorProperty
 
-# Properties
 var anim_player: AnimationPlayer
 
-# Signals
 signal animation_updated(animation_player: AnimationPlayer)
 
 func _can_handle(object):
@@ -18,11 +16,9 @@ func _can_handle(object):
 		return true
 	return false
 
-## Create UI here
 func _parse_end(object: Object):
 	var header = CustomEditorInspectorCategory.new("Import AnimatedSprite2D/3D")
 
-	# AnimatedSprite2D Node selector
 	node_selector = NodeSelectorProperty.new(anim_player)
 	node_selector.label = "AnimatedSprite2D/3D Node"
 
@@ -32,7 +28,6 @@ func _parse_end(object: Object):
 		)
 
 
-	# Import button
 	var button := Button.new()
 	button.text = "Import"
 	button.get_minimum_size().y = 26
@@ -56,7 +51,6 @@ func _parse_end(object: Object):
 func _on_animation_updated():
 	emit_signal("animation_updated", anim_player)
 
-# Child class
 class CustomEditorInspectorCategory extends Control:
 	var title: String = ""
 	var icon: Texture2D = null

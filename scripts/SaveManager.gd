@@ -1,14 +1,8 @@
 extends Node
 
-## Менеджер сохранений. Хранит состояние игры в user://savegame.cfg
-## Сохраняет: инвентарь игрока и NPC, прогресс квеста,
-## позицию/здоровье/стамину игрока, позицию NPC, состояние мира
-## (срубленные/добытые объекты, костры, дропы на земле)
-## и флаг просмотра вступительной катсцены.
 
 const SAVE_PATH = "user://savegame.cfg"
 
-## id предмета -> путь к ресурсу .tres (нужно для восстановления инвентаря)
 const ITEM_PATHS = {
 	"wood": "res://Resources/Wood/wood_item.tres",
 	"stone": "res://Resources/Stone/stone_item.tres",
@@ -18,15 +12,12 @@ const ITEM_PATHS = {
 	"wheat": "res://Resources/Wheat/wheat_item.tres",
 }
 
-## Группы добываемых объектов, которые исчезают навсегда (для сохранения мира).
 const WORLD_GROUPS = ["trees", "rocks", "gold_ores", "campspot"]
 
 const CAMPFIRE_SCENE_PATH = "res://camp_fire.tscn"
 
-## Была ли уже показана вступительная катсцена.
 var cutscene_seen: bool = false
 
-## Данные игрока/NPC/мира, которые применяются после загрузки сцены.
 var _pending: Dictionary = {}
 var _has_pending: bool = false
 
@@ -35,15 +26,12 @@ func has_save() -> bool:
 	return FileAccess.file_exists(SAVE_PATH)
 
 
-## Собирает текущее состояние игры и пишет в файл. Возвращает true при успехе.
 func save_game() -> bool:
 	var cfg = ConfigFile.new()
 
-	# Инвентари
 	cfg.set_value("inventory", "slots", _serialize_slots(Inventory.slots))
 	cfg.set_value("npc_inventory", "slots", _serialize_slots(NPCInventory.slots))
 
-	# Квест
 	var quest = {}
 	for obj_id in QuestManager.objectives:
 		var o = QuestManager.objectives[obj_id]
@@ -52,7 +40,6 @@ func save_game() -> bool:
 	cfg.set_value("quest", "active", QuestManager.quest_active)
 	cfg.set_value("quest", "complete", QuestManager.quest_complete)
 
-	# Игрок
 	var player = get_tree().get_first_node_in_group("player")
 	if player:
 		cfg.set_value("player", "pos_x", player.global_position.x)
@@ -60,24 +47,20 @@ func save_game() -> bool:
 		cfg.set_value("player", "health", player.health)
 		cfg.set_value("player", "stamina", player.stamina)
 
-	# NPC (Oleg)
 	var npc = get_tree().get_first_node_in_group("npc")
 	if npc:
 		cfg.set_value("npc", "pos_x", npc.global_position.x)
 		cfg.set_value("npc", "pos_y", npc.global_position.y)
 
-	# Мир
 	cfg.set_value("world", "alive_objects", _collect_alive_objects())
 	cfg.set_value("world", "campfires", _collect_campfires())
 	cfg.set_value("world", "drops", _collect_drops())
 
-	# Флаги
 	cfg.set_value("flags", "cutscene_seen", cutscene_seen)
 
 	return cfg.save(SAVE_PATH) == OK
 
 
-## Ключи добываемых объектов, которые ещё ЖИВЫ (путь относительно корня сцены).
 func _collect_alive_objects() -> Array:
 	var keys = []
 	var root = get_tree().current_scene
@@ -106,26 +89,21 @@ func _collect_drops() -> Array:
 		var path = c.item.scene_path
 		if path == "":
 			continue
-		# Позиция wrapper-ноды (родитель Area2D), если есть
 		var node = c.get_parent() if c.get_parent() else c
 		out.append({"scene": path, "x": node.global_position.x, "y": node.global_position.y})
 	return out
 
 
-## Читает файл и восстанавливает состояние. Инвентари и квест (автозагрузки)
-## применяются сразу; позиции игрока/NPC откладываются до загрузки сцены.
 func load_game() -> bool:
 	var cfg = ConfigFile.new()
 	if cfg.load(SAVE_PATH) != OK:
 		return false
 
-	# Инвентари
 	Inventory.slots = _deserialize_slots(cfg.get_value("inventory", "slots", null), Inventory.SLOT_COUNT)
 	Inventory.inventory_changed.emit()
 	NPCInventory.slots = _deserialize_slots(cfg.get_value("npc_inventory", "slots", null), NPCInventory.SLOT_COUNT)
 	NPCInventory.inventory_changed.emit()
 
-	# Квест
 	var quest = cfg.get_value("quest", "objectives", {})
 	for obj_id in quest:
 		if QuestManager.objectives.has(obj_id):
@@ -133,14 +111,11 @@ func load_game() -> bool:
 			QuestManager.objectives[obj_id].done = bool(quest[obj_id].done)
 	QuestManager.quest_active = cfg.get_value("quest", "active", false)
 	QuestManager.quest_complete = cfg.get_value("quest", "complete", false)
-	# Если квест уже был завершён — не запускаем концовку повторно
 	QuestManager._finished_emitted = QuestManager.quest_complete
 	QuestManager.quest_updated.emit()
 
-	# Флаги (применяются сразу)
 	cutscene_seen = cfg.get_value("flags", "cutscene_seen", false)
 
-	# Откладываем позиции и состояние мира до готовности сцены
 	_pending = {
 		"px": cfg.get_value("player", "pos_x", null),
 		"py": cfg.get_value("player", "pos_y", null),
@@ -156,8 +131,6 @@ func load_game() -> bool:
 	return true
 
 
-## Применяет отложенные данные (позиции/HP) к уже загруженной сцене.
-## Вызывается из test_word.gd в _ready.
 func apply_pending_to_scene() -> bool:
 	if not _has_pending:
 		return false
@@ -182,13 +155,11 @@ func apply_pending_to_scene() -> bool:
 	return true
 
 
-## Восстанавливает состояние мира: убирает добытые объекты, спавнит костры и дропы.
 func _restore_world(d: Dictionary) -> void:
 	var root = get_tree().current_scene
 	if not root:
 		return
 
-	# Удаляем объекты, которых не было в сохранённом "живом" наборе
 	var alive = d.get("alive_objects", null)
 	if alive != null:
 		var alive_set = {}
@@ -202,7 +173,6 @@ func _restore_world(d: Dictionary) -> void:
 				if not alive_set.has(key):
 					node.queue_free()
 
-	# Спавним сохранённые костры
 	var fires = d.get("campfires", [])
 	if fires and not fires.is_empty() and ResourceLoader.exists(CAMPFIRE_SCENE_PATH):
 		var fire_scene = load(CAMPFIRE_SCENE_PATH)
@@ -211,7 +181,6 @@ func _restore_world(d: Dictionary) -> void:
 			root.add_child(fire)
 			fire.global_position = Vector2(f.x, f.y)
 
-	# Спавним сохранённые дропы на земле
 	var drops = d.get("drops", [])
 	for drop in drops:
 		var scene_path = drop.get("scene", "")
@@ -222,7 +191,6 @@ func _restore_world(d: Dictionary) -> void:
 		item.global_position = Vector2(drop.x, drop.y)
 
 
-## Сброс состояния для новой игры (инвентари + квест + флаги в исходное).
 func reset_state() -> void:
 	_has_pending = false
 	_pending = {}
@@ -246,7 +214,6 @@ func delete_save() -> void:
 		DirAccess.remove_absolute(SAVE_PATH)
 
 
-# --- helpers ---
 
 func _serialize_slots(slots: Array) -> Array:
 	var out = []

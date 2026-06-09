@@ -3,9 +3,9 @@ extends CanvasLayer
 
 signal cutscene_finished
 
-const C_FIRE := Color(1, 0.5, 0.2)      # Огненный тотем
-const C_WISE := Color(0.6, 0.4, 1)      # Тотем мудрости
-const C_ALLY := Color(0.4, 0.9, 0.7)    # Помощник
+const C_FIRE := Color(1, 0.5, 0.2)
+const C_WISE := Color(0.6, 0.4, 1)
+const C_ALLY := Color(0.4, 0.9, 0.7)
 
 var dialog = [
 	{"speaker": "Огненный тотем", "color": C_FIRE, "text": "Ты очнулся, странник. Добро пожаловать в Мир Испытаний."},

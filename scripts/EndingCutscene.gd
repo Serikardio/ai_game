@@ -1,11 +1,9 @@
 extends CanvasLayer
 
-## Финальная катсцена. Запускается, когда выполнены все цели квеста.
-## Прощание со спутником и экран концовки.
 
-const C_FIRE := Color(1, 0.5, 0.2)      # Огненный тотем
-const C_WISE := Color(0.6, 0.4, 1)      # Тотем мудрости
-const C_ALLY := Color(0.4, 0.9, 0.7)    # Помощник
+const C_FIRE := Color(1, 0.5, 0.2)
+const C_WISE := Color(0.6, 0.4, 1)
+const C_ALLY := Color(0.4, 0.9, 0.7)
 
 var dialog = [
 	{"speaker": "Огненный тотем", "color": C_FIRE, "text": "Ритуал свершён. Врата открыты, странник."},
@@ -163,14 +161,12 @@ func _show_ending_screen():
 	btn.pressed.connect(_on_return_to_menu)
 	center.add_child(btn)
 
-	# Плавное появление
 	center.modulate = Color(1, 1, 1, 0)
 	var tween = create_tween()
 	tween.tween_property(center, "modulate", Color.WHITE, 1.0)
 
 
 func _on_return_to_menu():
-	# Игра пройдена — удаляем сохранение, чтобы началась новая
 	SaveManager.delete_save()
 	get_tree().paused = false
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")

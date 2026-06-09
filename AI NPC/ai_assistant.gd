@@ -37,6 +37,10 @@ var collect_timer = 0.0
 var _return_state = State.FOLLOWING
 var _enemy_warn_cooldown: float = 0.0
 
+var max_health: int = 100
+var health: int = 100
+var is_dead: bool = false
+
 const ENEMY_WARN_PHRASES = [
 	"Осторожно, враг!",
 	"Берегись!",
@@ -127,19 +131,15 @@ func _navigate_to(target_pos: Vector2, speed: float = SPEED) -> Vector2:
 	nav_agent.target_position = target_pos
 
 	var to_target = target_pos - global_position
-	# Уже на месте — стоим
 	if to_target.length() <= nav_agent.target_desired_distance:
 		return Vector2.ZERO
 
-	# Пробуем идти по навигационной сетке
 	if not nav_agent.is_navigation_finished():
 		var next_pos = nav_agent.get_next_path_position()
 		var dir = global_position.direction_to(next_pos)
 		if dir.length() > 0.01:
 			return dir * speed
 
-	# Сетка не дала движения (нет пути / агент вне меша / путь ещё не построен).
-	# Фоллбэк: идём напрямую к цели. move_and_slide проскользит вдоль стен.
 	return to_target.normalized() * speed
 
 
@@ -458,6 +458,11 @@ func _is_target_destroyed(obj) -> bool:
 
 
 func _physics_process(delta):
+	if is_dead:
+		velocity = Vector2.ZERO
+		move_and_slide()
+		return
+
 	if _enemy_warn_cooldown > 0:
 		_enemy_warn_cooldown -= delta
 
@@ -702,6 +707,9 @@ func _attack_enemy_loop():
 		_start_attack_animation(attack_dir)
 
 		await get_tree().create_timer(0.4).timeout
+		if is_instance_valid(target_enemy) and not target_enemy.is_dead:
+			if global_position.distance_to(target_enemy.global_position) <= ATTACK_DIST + 12.0:
+				target_enemy.take_damage(DAMAGE)
 		await get_tree().create_timer(0.1).timeout
 
 	is_attacking = false
@@ -762,8 +770,42 @@ func _on_hitbox_area_entered(area):
 	var obj = area.get_parent()
 	if obj.has_method("mine"):
 		obj.mine(DAMAGE)
-	if obj.has_method("take_damage") and obj.is_in_group("enemies"):
-		obj.take_damage(DAMAGE)
+
+
+func take_damage(amount: int):
+	if is_dead:
+		return
+	health -= amount
+	_flash_damage()
+	if health <= 0:
+		health = 0
+		is_dead = true
+		_die()
+
+
+func _flash_damage():
+	anim.modulate = Color(10, 0, 0)
+	await get_tree().create_timer(0.1).timeout
+	if is_instance_valid(anim):
+		anim.modulate = Color.WHITE
+
+
+func _die():
+	velocity = Vector2.ZERO
+	is_attacking = false
+	hitbox_shape.disabled = true
+	target_enemy = null
+	current_state = State.FOLLOWING
+	anim.modulate = Color(1, 1, 1, 0.4)
+	show_chat_message("Я... вернусь...")
+	await get_tree().create_timer(4.0).timeout
+	health = max_health
+	is_dead = false
+	if is_instance_valid(anim):
+		anim.modulate = Color.WHITE
+	if player and is_instance_valid(player):
+		global_position = player.global_position + Vector2(30, 0)
+	show_chat_message("Я снова с тобой!")
 
 
 func _play_walk_animation(dir: Vector2, is_running: bool = false):

@@ -1,7 +1,5 @@
 extends CanvasLayer
 
-## Меню паузы. Открывается/закрывается по Escape (ui_cancel).
-## Ставит игру на паузу и даёт кнопки: продолжить, сохранить, выйти в меню.
 
 var is_open: bool = false
 var _panel: Control
@@ -9,7 +7,6 @@ var _status_label: Label
 
 
 func _ready():
-	# Меню должно работать даже когда дерево на паузе
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	layer = 20
 	_build_ui()
@@ -19,7 +16,6 @@ func _ready():
 func _unhandled_input(event):
 	if event.is_action_pressed("ui_cancel"):
 		var focus = get_viewport().gui_get_focus_owner()
-		# Если игрок печатает команду — пусть Escape сначала уберёт фокус
 		if not is_open and focus is LineEdit:
 			focus.release_focus()
 			get_viewport().set_input_as_handled()
@@ -48,7 +44,6 @@ func close():
 	get_tree().paused = false
 
 
-# --- кнопки ---
 
 func _on_resume():
 	close()
@@ -62,12 +57,11 @@ func _on_save():
 
 
 func _on_quit_to_menu():
-	SaveManager.save_game()  # автосохранение перед выходом
+	SaveManager.save_game()
 	get_tree().paused = false
 	get_tree().change_scene_to_file("res://scenes/MainMenu.tscn")
 
 
-# --- построение интерфейса ---
 
 func _build_ui():
 	_panel = Control.new()
@@ -75,14 +69,12 @@ func _build_ui():
 	_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(_panel)
 
-	# Затемнение фона
 	var dimmer = ColorRect.new()
 	dimmer.set_anchors_preset(Control.PRESET_FULL_RECT)
 	dimmer.color = Color(0, 0, 0, 0.6)
 	dimmer.mouse_filter = Control.MOUSE_FILTER_STOP
 	_panel.add_child(dimmer)
 
-	# Контейнер кнопок по центру
 	var vbox = VBoxContainer.new()
 	vbox.set_anchors_preset(Control.PRESET_CENTER)
 	vbox.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -91,7 +83,6 @@ func _build_ui():
 	vbox.custom_minimum_size = Vector2(180, 0)
 	_panel.add_child(vbox)
 
-	# Заголовок
 	var title = Label.new()
 	title.text = "Пауза"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -106,7 +97,6 @@ func _build_ui():
 	vbox.add_child(_make_button("Сохранить", _on_save))
 	vbox.add_child(_make_button("Выйти в меню", _on_quit_to_menu))
 
-	# Статус сохранения
 	_status_label = Label.new()
 	_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_status_label.add_theme_color_override("font_color", Color(0.7, 1, 0.7))

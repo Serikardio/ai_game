@@ -3,7 +3,6 @@ extends Node2D
 @onready var animP = $AnimationPlayer
 
 var _nav_region: NavigationRegion2D
-# Проходимая граница карты (вся карта)
 var _nav_outer := PackedVector2Array([
 	Vector2(5, 5), Vector2(3900, 5),
 	Vector2(3900, 2380), Vector2(5, 2380)
@@ -12,9 +11,7 @@ var _nav_outer := PackedVector2Array([
 func _ready():
 	y_sort_enabled = true
 
-	# Фоновая музыка: обрезаем медленное вступление (20 сек) и плавно
-	# поднимаем громкость до -25 дБ («рассвет») за 3 секунды
-	AudioManager.play_music(AudioManager.MUSIC_ARIA_MATH, -25.0, 3.0, 20.0)
+	AudioManager.play_music(AudioManager.MUSIC_ARIA_MATH, -25.0, 1.5, 20.0)
 
 	var drop_layer = CanvasLayer.new()
 	drop_layer.name = "WorldDropZoneLayer"
@@ -50,25 +47,21 @@ func _ready():
 	tracker.set_script(preload("res://scripts/QuestTracker.gd"))
 	quest_layer.add_child(tracker)
 
-	# Вступительная катсцена — только если ещё не была показана
 	if not SaveManager.cutscene_seen:
 		var cutscene = CanvasLayer.new()
 		cutscene.set_script(preload("res://scripts/IntroCutscene.gd"))
 		add_child(cutscene)
 		cutscene.cutscene_finished.connect(func(): SaveManager.cutscene_seen = true)
 	else:
-		# Катсцена пропущена — но квест всё равно нужно активировать
 		QuestManager.start_quest()
 
 	_setup_navigation()
 
-	# Меню паузы (Escape)
 	var pause_menu = CanvasLayer.new()
 	pause_menu.name = "PauseMenu"
 	pause_menu.set_script(preload("res://scripts/PauseMenu.gd"))
 	add_child(pause_menu)
 
-	# Автосохранение раз в 5 минут
 	var autosave = Timer.new()
 	autosave.name = "AutosaveTimer"
 	autosave.wait_time = 300.0
@@ -76,22 +69,18 @@ func _ready():
 	autosave.timeout.connect(_on_autosave)
 	add_child(autosave)
 
-	# Финальная катсцена — запускается, когда выполнены все цели
 	QuestManager.quest_finished.connect(_on_quest_finished)
 
-	# Применяем загруженное сохранение (позиции/HP), если оно было загружено
 	_apply_save_and_rebake.call_deferred()
 
 
 func _apply_save_and_rebake():
-	# Если из сохранения убрали добытые объекты — навигацию нужно перепечь
 	if SaveManager.apply_pending_to_scene():
-		await get_tree().process_frame  # ждём, пока queue_free объектов отработает
+		await get_tree().process_frame
 		rebake_navigation()
 
 
 func _on_quest_finished():
-	# Небольшая пауза, чтобы дослушать реплику тотема, затем концовка
 	await get_tree().create_timer(2.0).timeout
 	var ending = CanvasLayer.new()
 	ending.name = "EndingCutscene"
@@ -132,10 +121,6 @@ func _setup_navigation():
 	rebake_navigation()
 
 
-## Перезапекает навигацию по текущему состоянию сцены.
-## Проходимая зона — вся карта; препятствия собираем вручную из статических
-## коллайдеров (CollisionShape2D и CollisionPolygon2D), пропуская граничную рамку.
-## Вызывать после изменения мира (загрузка сохранения, снос объектов).
 func rebake_navigation():
 	if not _nav_region:
 		return
@@ -153,15 +138,13 @@ func rebake_navigation():
 				var pts = PackedVector2Array()
 				for p in child.polygon:
 					pts.append(xform * p)
-				# Пропускаем коллайдер-рамку по периметру карты — он не препятствие,
-				# а граница (её роль выполняет проходимый контур _nav_outer)
 				if _bbox_area(pts) >= map_area * 0.8:
 					continue
 				source_geo.add_obstruction_outline(pts)
 			elif child is CollisionShape2D and child.shape is RectangleShape2D:
 				var half = (child.shape as RectangleShape2D).size * 0.5
 				var c = child.global_position
-				var m = 4.0  # небольшой отступ, чтобы NPC не шёл впритык
+				var m = 4.0
 				source_geo.add_obstruction_outline(PackedVector2Array([
 					c + Vector2(-half.x - m, -half.y - m),
 					c + Vector2(half.x + m, -half.y - m),

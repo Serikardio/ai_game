@@ -2,8 +2,8 @@ extends Node
 
 
 signal quest_updated
-signal objective_completed(obj_id)   # одна цель только что выполнена
-signal quest_finished                # все цели выполнены (срабатывает один раз)
+signal objective_completed(obj_id)
+signal quest_finished
 
 var _finished_emitted: bool = false
 
