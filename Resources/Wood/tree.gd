@@ -27,10 +27,10 @@ func mine(damage):
 
 func flash():
 	if hit_tween:
-		hit_tween.kill() # Останавливаем предыдущую анимацию если она была
-	
+		hit_tween.kill()
+
 	hit_tween = create_tween()
-	sprite.modulate = Color(10, 10, 10) # Белое свечение (Raw Color)
+	sprite.modulate = Color(10, 10, 10)
 	hit_tween.tween_property(sprite, "modulate", Color.WHITE, 0.1)
 
 
@@ -38,14 +38,11 @@ func cut_tree():
 	if is_cut:
 		return
 	is_cut = true
-	
-	# СРАЗУ отключаем коллизию, чтобы избежать лишних сигналов и зависаний
+
 	collision.set_deferred("disabled", true)
 	print("Дерево уничтожено, спавню лут")
-	
-	# Запоминаем позицию ДО удаления дерева
+
 	var spawn_pos = global_position
-	# Передаем позицию в отложенный вызов
 	call_deferred("_drop_items_deferred", spawn_pos)
 	queue_free()
 
@@ -55,7 +52,6 @@ func _drop_items_deferred(spawn_pos):
 	if not parent:
 		return
 
-	# Позиции персонажей для отталкивания
 	var bodies: Array[Vector2] = []
 	for g in ["player", "npc"]:
 		for b in get_tree().get_nodes_in_group(g):
@@ -72,7 +68,6 @@ func _drop_items_deferred(spawn_pos):
 		var land_offset = Vector2(randf_range(-50, 50), randf_range(-10, 30))
 		var land_pos = spawn_pos + land_offset
 
-		# Отталкиваем от персонажей
 		for body_pos in bodies:
 			var dist = land_pos.distance_to(body_pos)
 			if dist < 30.0 and dist > 0.1:

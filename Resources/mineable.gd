@@ -1,18 +1,13 @@
 @tool
 extends Node2D
 
-## Добываемый объект со стадиями разрушения (камень, золото).
-## Каждая стадия — отдельный спрайт из тайлсета.
-## При переходе на следующую стадию выбрасывает ресурс.
-## Когда стадии заканчиваются — объект уничтожен.
 
-@export var stage_hp: int = 10           # HP на каждую стадию
+@export var stage_hp: int = 10
 @export var drop_scene: PackedScene
 @export var drop_per_stage_min: int = 1
 @export var drop_per_stage_max: int = 1
 @export var group_name: String = "rocks"
 
-# Координаты стадий в тайлсете (заполняются в наследниках или из сцены)
 @export var stage_regions: Array[Rect2] = []
 
 var current_stage: int = 0
@@ -47,19 +42,16 @@ func mine(damage):
 
 
 func _next_stage():
-	# Выбрасываем ресурс за эту стадию
 	_drop_items(global_position)
 
 	current_stage += 1
 
 	if current_stage >= stage_regions.size():
-		# Все стадии пройдены — уничтожаем
 		is_mined = true
 		collision.set_deferred("disabled", true)
 		queue_free()
 		return
 
-	# Переходим на следующую стадию
 	stage_health = stage_hp
 	_update_sprite()
 
@@ -86,7 +78,6 @@ func _drop_items(spawn_pos: Vector2):
 	if not parent or not drop_scene:
 		return
 
-	# Собираем позиции персонажей для отталкивания
 	var bodies: Array[Vector2] = []
 	for g in ["player", "npc"]:
 		for b in get_tree().get_nodes_in_group(g):
@@ -102,7 +93,6 @@ func _drop_items(spawn_pos: Vector2):
 		var land_offset = Vector2(randf_range(-30, 30), randf_range(-10, 20))
 		var land_pos = spawn_pos + land_offset
 
-		# Отталкиваем точку приземления от персонажей
 		for body_pos in bodies:
 			var dist = land_pos.distance_to(body_pos)
 			if dist < 30.0 and dist > 0.1:

@@ -31,10 +31,10 @@ var stamina: float = 100.0
 var is_dead: bool = false
 
 const DAMAGE = 10
-const STAMINA_RUN_COST = 20.0    # в секунду при беге
-const STAMINA_ATTACK_COST = 15.0  # за атаку
-const STAMINA_REGEN = 25.0        # в секунду при отдыхе
-const STAMINA_REGEN_DELAY = 0.5   # задержка перед регеном
+const STAMINA_RUN_COST = 20.0
+const STAMINA_ATTACK_COST = 15.0
+const STAMINA_REGEN = 25.0
+const STAMINA_REGEN_DELAY = 0.5
 var _stamina_cooldown: float = 0.0
 
 signal started_attacking(direction)
@@ -58,7 +58,6 @@ func _physics_process(delta):
 		velocity = Vector2.ZERO
 		move_and_slide()
 		return
-	# Проверяем, не открыта ли командная строка или любой другой UI с фокусом
 	if get_viewport().gui_get_focus_owner() != null:
 		velocity = Vector2.ZERO
 		play_idle_animation()
@@ -73,7 +72,6 @@ func _physics_process(delta):
 	var dir = Vector2.ZERO
 	run()
 
-	# собираем направление
 	if Input.is_action_pressed("Up"):
 		dir.y -= 1
 	if Input.is_action_pressed("Down"):
@@ -83,7 +81,6 @@ func _physics_process(delta):
 	if Input.is_action_pressed("Right"):
 		dir.x += 1
 
-	# атака (обрабатывается в _unhandled_input)
 	if _wants_attack and !is_attacking:
 		_wants_attack = false
 		start_attack()
@@ -97,7 +94,6 @@ func _physics_process(delta):
 		velocity = Vector2.ZERO
 		play_idle_animation()
 
-	# Стамина
 	if speed == RUN_SPEED and dir != Vector2.ZERO:
 		stamina -= STAMINA_RUN_COST * delta
 		_stamina_cooldown = STAMINA_REGEN_DELAY
@@ -254,7 +250,6 @@ func _die():
 	anim.modulate = Color(1, 1, 1, 0.5)
 	show_chat_message("...")
 	await get_tree().create_timer(2.0).timeout
-	# Respawn
 	health = max_health
 	is_dead = false
 	anim.modulate = Color.WHITE

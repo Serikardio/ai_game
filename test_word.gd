@@ -10,14 +10,12 @@ var _nav_outer := PackedVector2Array([
 ])
 
 func _ready():
-	# Y-sort so characters hide behind trees correctly
 	y_sort_enabled = true
 
 	# Фоновая музыка: обрезаем медленное вступление (20 сек) и плавно
 	# поднимаем громкость до -25 дБ («рассвет») за 3 секунды
 	AudioManager.play_music(AudioManager.MUSIC_ARIA_MATH, -25.0, 3.0, 20.0)
 
-	# Add world drop zone (catches items dragged outside any hotbar)
 	var drop_layer = CanvasLayer.new()
 	drop_layer.name = "WorldDropZoneLayer"
 	drop_layer.layer = 0
@@ -28,7 +26,6 @@ func _ready():
 	drop_zone.set_script(preload("res://scripts/WorldDropZone.gd"))
 	drop_layer.add_child(drop_zone)
 
-	# Панель крафта
 	var craft_layer = CanvasLayer.new()
 	craft_layer.name = "CraftingLayer"
 	craft_layer.layer = 1
@@ -41,7 +38,6 @@ func _ready():
 	craft_panel.set_script(preload("res://scripts/CraftingPanel.gd"))
 	craft_layer.add_child(craft_panel)
 
-	# Трекер квестов
 	var quest_layer = CanvasLayer.new()
 	quest_layer.name = "QuestLayer"
 	quest_layer.layer = 1
@@ -64,7 +60,6 @@ func _ready():
 		# Катсцена пропущена — но квест всё равно нужно активировать
 		QuestManager.start_quest()
 
-	# Navigation setup — bake navmesh from static colliders
 	_setup_navigation()
 
 	# Меню паузы (Escape)

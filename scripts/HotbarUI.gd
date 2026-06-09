@@ -43,7 +43,6 @@ func _on_command_submitted(text: String):
 		command_input.visible = false
 		command_input.release_focus()
 
-# --- Build UI ---
 
 func refresh_ui():
 	for child in container.get_children():

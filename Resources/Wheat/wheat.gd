@@ -1,19 +1,18 @@
 @tool
 extends Node2D
 
-## Пшеница с 4 стадиями роста. Можно собрать только на 4 стадии.
 
-@export var grow_time: float = 30.0  # Секунд на каждую стадию
+@export var grow_time: float = 30.0
 
 var current_stage: int = 0
 var is_harvested: bool = false
 var grow_timer: float = 0.0
 
 const STAGE_REGIONS = [
-	Rect2(80, 16, 16, 16),   # Стадия 1 (5,1)
-	Rect2(96, 16, 16, 16),   # Стадия 2 (6,1)
-	Rect2(80, 32, 16, 16),   # Стадия 3 (5,2)
-	Rect2(96, 32, 16, 16),   # Стадия 4 (6,2) — можно собрать
+	Rect2(80, 16, 16, 16),
+	Rect2(96, 16, 16, 16),
+	Rect2(80, 32, 16, 16),
+	Rect2(96, 32, 16, 16),
 ]
 
 const WHEAT_DROP = preload("res://scenes/drops/Wheat.tscn")
@@ -29,7 +28,6 @@ func _ready():
 		_update_sprite()
 		return
 	add_to_group("wheat")
-	# Случайная стартовая стадия + случайный прогресс внутри стадии
 	current_stage = randi_range(0, 3)
 	grow_timer = randf_range(0, grow_time)
 	_update_sprite()

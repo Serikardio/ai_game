@@ -5,16 +5,13 @@ extends CanvasLayer
 
 func _ready():
 	print("NPCInventoryUI ready")
-	# Hide template at start
 	item_template.visible = false
-	
-	# Connect to inventory signal
+
 	NPCInventory.inventory_changed.connect(refresh_ui)
-	
-	# Start hidden
+
 	visible = false
-	$NPCInventoryUI.visible = true # Ensure child is visible when layer is shown
-	
+	$NPCInventoryUI.visible = true
+
 	refresh_ui()
 
 func _input(event):
@@ -26,25 +23,23 @@ func _input(event):
 
 func refresh_ui():
 	print("NPCInventoryUI: Refreshing UI...")
-	# Clear existing items except template
 	for child in container.get_children():
 		if child != item_template:
 			child.queue_free()
-	
+
 	var items = NPCInventory.get_items()
 	for entry in items:
 		var item = entry.item
 		var quantity = entry.quantity
-		
+
 		var slot = item_template.duplicate()
 		slot.visible = true
 		container.add_child(slot)
-		
-		# Set text and icon
+
 		var name_label = slot.get_node("NameLabel")
 		var count_label = slot.get_node("CountLabel")
 		var icon_rect = slot.get_node("Icon")
-		
+
 		name_label.text = item.name
 		count_label.text = "x" + str(quantity)
 		if item.icon:

@@ -3,7 +3,8 @@ extends Node
 signal inventory_changed
 
 const SLOT_COUNT = 10
-var slots: Array = []  # Array of {item, quantity} or null
+const MAX_STACK = 10
+var slots: Array = []
 
 func _init():
 	slots.resize(SLOT_COUNT)
@@ -13,23 +14,20 @@ func _init():
 func add_item(item, to_slot: int = -1):
 	if not item:
 		return
-	# Try specific slot first
 	if to_slot >= 0 and to_slot < SLOT_COUNT:
 		if slots[to_slot] == null:
 			slots[to_slot] = {"item": item, "quantity": 1}
 			emit_signal("inventory_changed")
 			return
-		elif slots[to_slot].item.id == item.id:
+		elif slots[to_slot].item.id == item.id and slots[to_slot].quantity < MAX_STACK:
 			slots[to_slot].quantity += 1
 			emit_signal("inventory_changed")
 			return
-	# Find existing stack
 	for i in range(SLOT_COUNT):
-		if slots[i] != null and slots[i].item.id == item.id:
+		if slots[i] != null and slots[i].item.id == item.id and slots[i].quantity < MAX_STACK:
 			slots[i].quantity += 1
 			emit_signal("inventory_changed")
 			return
-	# Find empty slot
 	for i in range(SLOT_COUNT):
 		if slots[i] == null:
 			slots[i] = {"item": item, "quantity": 1}
