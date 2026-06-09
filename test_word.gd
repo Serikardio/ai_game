@@ -2,12 +2,20 @@ extends Node2D
 
 @onready var animP = $AnimationPlayer
 
+var _nav_region: NavigationRegion2D
+# Проходимая граница карты (вся карта)
+var _nav_outer := PackedVector2Array([
+	Vector2(5, 5), Vector2(3900, 5),
+	Vector2(3900, 2380), Vector2(5, 2380)
+])
+
 func _ready():
 	# Y-sort so characters hide behind trees correctly
 	y_sort_enabled = true
 
-	# Фоновая музыка
-	AudioManager.play_music(AudioManager.MUSIC_ARIA_MATH, -25.0)
+	# Фоновая музыка: обрезаем медленное вступление (20 сек) и плавно
+	# поднимаем громкость до -25 дБ («рассвет») за 3 секунды
+	AudioManager.play_music(AudioManager.MUSIC_ARIA_MATH, -25.0, 3.0, 20.0)
 
 	# Add world drop zone (catches items dragged outside any hotbar)
 	var drop_layer = CanvasLayer.new()
@@ -46,71 +54,143 @@ func _ready():
 	tracker.set_script(preload("res://scripts/QuestTracker.gd"))
 	quest_layer.add_child(tracker)
 
-	# Вступительная катсцена
-	var cutscene = CanvasLayer.new()
-	cutscene.set_script(preload("res://scripts/IntroCutscene.gd"))
-	add_child(cutscene)
+	# Вступительная катсцена — только если ещё не была показана
+	if not SaveManager.cutscene_seen:
+		var cutscene = CanvasLayer.new()
+		cutscene.set_script(preload("res://scripts/IntroCutscene.gd"))
+		add_child(cutscene)
+		cutscene.cutscene_finished.connect(func(): SaveManager.cutscene_seen = true)
+	else:
+		# Катсцена пропущена — но квест всё равно нужно активировать
+		QuestManager.start_quest()
 
 	# Navigation setup — bake navmesh from static colliders
 	_setup_navigation()
 
+	# Меню паузы (Escape)
+	var pause_menu = CanvasLayer.new()
+	pause_menu.name = "PauseMenu"
+	pause_menu.set_script(preload("res://scripts/PauseMenu.gd"))
+	add_child(pause_menu)
+
+	# Автосохранение раз в 5 минут
+	var autosave = Timer.new()
+	autosave.name = "AutosaveTimer"
+	autosave.wait_time = 300.0
+	autosave.autostart = true
+	autosave.timeout.connect(_on_autosave)
+	add_child(autosave)
+
+	# Финальная катсцена — запускается, когда выполнены все цели
+	QuestManager.quest_finished.connect(_on_quest_finished)
+
+	# Применяем загруженное сохранение (позиции/HP), если оно было загружено
+	_apply_save_and_rebake.call_deferred()
+
+
+func _apply_save_and_rebake():
+	# Если из сохранения убрали добытые объекты — навигацию нужно перепечь
+	if SaveManager.apply_pending_to_scene():
+		await get_tree().process_frame  # ждём, пока queue_free объектов отработает
+		rebake_navigation()
+
+
+func _on_quest_finished():
+	# Небольшая пауза, чтобы дослушать реплику тотема, затем концовка
+	await get_tree().create_timer(2.0).timeout
+	var ending = CanvasLayer.new()
+	ending.name = "EndingCutscene"
+	ending.set_script(preload("res://scripts/EndingCutscene.gd"))
+	add_child(ending)
+
+
+func _on_autosave():
+	if SaveManager.save_game():
+		_notify("Автосохранение...")
+
+
+func _input(event):
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_F5:
+			if SaveManager.save_game():
+				_notify("Сохранено")
+		elif event.keycode == KEY_F9:
+			if SaveManager.load_game():
+				get_tree().reload_current_scene()
+
+
+func _notify(text: String):
+	var player = get_tree().get_first_node_in_group("player")
+	if player and player.has_method("show_chat_message"):
+		player.show_chat_message(text, 1.5)
+
 func _setup_navigation():
-	var nav_region = NavigationRegion2D.new()
-	nav_region.name = "NavRegion"
+	_nav_region = NavigationRegion2D.new()
+	_nav_region.name = "NavRegion"
+
 	var nav_poly = NavigationPolygon.new()
-	nav_poly.agent_radius = 12.0
+	nav_poly.agent_radius = 8.0
 
-	# Walkable boundary (whole map)
-	var outer = PackedVector2Array([
-		Vector2(5, 5), Vector2(3900, 5),
-		Vector2(3900, 2380), Vector2(5, 2380)
-	])
+	_nav_region.navigation_polygon = nav_poly
+	add_child(_nav_region)
 
-	# Fence obstacle (from CollisionPolygon2D2 in the scene)
-	var fence = PackedVector2Array([
-		Vector2(2686, 1692), Vector2(2686, 1636), Vector2(1992, 1637),
-		Vector2(1988, 2377), Vector2(1988, 2383), Vector2(3901, 2382),
-		Vector2(3898, 946), Vector2(2776, 948), Vector2(2771, 1561),
-		Vector2(2777, 1566), Vector2(2840, 1567), Vector2(2846, 1563),
-		Vector2(2847, 1551), Vector2(2785, 1551), Vector2(2785, 963),
-		Vector2(2785, 960), Vector2(3889, 959), Vector2(3890, 2369),
-		Vector2(2001, 2367), Vector2(2002, 1648), Vector2(2672, 1648),
-		Vector2(2672, 1695)
-	])
+	rebake_navigation()
+
+
+## Перезапекает навигацию по текущему состоянию сцены.
+## Проходимая зона — вся карта; препятствия собираем вручную из статических
+## коллайдеров (CollisionShape2D и CollisionPolygon2D), пропуская граничную рамку.
+## Вызывать после изменения мира (загрузка сохранения, снос объектов).
+func rebake_navigation():
+	if not _nav_region:
+		return
+	var nav_poly = _nav_region.navigation_polygon
 
 	var source_geo = NavigationMeshSourceGeometryData2D.new()
-	source_geo.add_traversable_outline(outer)
-	source_geo.add_obstruction_outline(fence)
+	source_geo.add_traversable_outline(_nav_outer)
 
-	# Автоматически добавляем все StaticBody как препятствия
+	var map_area := 3895.0 * 2375.0
+
 	for body in _find_all_static_bodies(self):
-		var shape_node = null
 		for child in body.get_children():
-			if child is CollisionShape2D and child.shape:
-				shape_node = child
-				break
-		if not shape_node:
-			continue
-
-		var shape = shape_node.shape
-		if shape is RectangleShape2D:
-			var pos = body.global_position + shape_node.position
-			var s = shape.size * 0.5
-			var margin = 8.0  # Отступ чтобы NPC не впритык ходил
-			var obstacle = PackedVector2Array([
-				pos + Vector2(-s.x - margin, -s.y - margin),
-				pos + Vector2(s.x + margin, -s.y - margin),
-				pos + Vector2(s.x + margin, s.y + margin),
-				pos + Vector2(-s.x - margin, s.y + margin),
-			])
-			source_geo.add_obstruction_outline(obstacle)
+			if child is CollisionPolygon2D and child.polygon.size() >= 3:
+				var xform = child.global_transform
+				var pts = PackedVector2Array()
+				for p in child.polygon:
+					pts.append(xform * p)
+				# Пропускаем коллайдер-рамку по периметру карты — он не препятствие,
+				# а граница (её роль выполняет проходимый контур _nav_outer)
+				if _bbox_area(pts) >= map_area * 0.8:
+					continue
+				source_geo.add_obstruction_outline(pts)
+			elif child is CollisionShape2D and child.shape is RectangleShape2D:
+				var half = (child.shape as RectangleShape2D).size * 0.5
+				var c = child.global_position
+				var m = 4.0  # небольшой отступ, чтобы NPC не шёл впритык
+				source_geo.add_obstruction_outline(PackedVector2Array([
+					c + Vector2(-half.x - m, -half.y - m),
+					c + Vector2(half.x + m, -half.y - m),
+					c + Vector2(half.x + m, half.y + m),
+					c + Vector2(-half.x - m, half.y + m),
+				]))
 
 	NavigationServer2D.bake_from_source_geometry_data(nav_poly, source_geo)
-
-	nav_region.navigation_polygon = nav_poly
-	add_child(nav_region)
+	_nav_region.navigation_polygon = nav_poly
 
 	print("Navigation baked. Polygon count: ", nav_poly.get_polygon_count())
+
+
+func _bbox_area(pts: PackedVector2Array) -> float:
+	var min_x = pts[0].x
+	var min_y = pts[0].y
+	var max_x = pts[0].x
+	var max_y = pts[0].y
+	for p in pts:
+		min_x = min(min_x, p.x)
+		min_y = min(min_y, p.y)
+		max_x = max(max_x, p.x)
+		max_y = max(max_y, p.y)
+	return (max_x - min_x) * (max_y - min_y)
 
 
 func _find_all_static_bodies(node: Node) -> Array:

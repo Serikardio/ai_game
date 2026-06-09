@@ -4,11 +4,15 @@ extends Node
 ## Предметы нужно ПРИНЕСТИ тотемам, а не просто собрать.
 
 signal quest_updated
+signal objective_completed(obj_id)   # одна цель только что выполнена
+signal quest_finished                # все цели выполнены (срабатывает один раз)
+
+var _finished_emitted: bool = false
 
 var objectives = {
 	"gold_block": {"name": "Слиток золота", "current": 0, "required": 3, "done": false},
 	"stone_block": {"name": "Блок камня", "current": 0, "required": 3, "done": false},
-	"wood": {"name": "Бревно", "current": 0, "required": 20, "done": false},
+	"wood": {"name": "Бревно", "current": 0, "required": 6, "done": false},
 	"campfire": {"name": "Костёр у тотемов", "current": 0, "required": 1, "done": false},
 }
 
@@ -40,8 +44,11 @@ func deliver_items() -> Array[String]:
 		if give > 0:
 			Inventory.remove_item(obj_id, give)
 			obj.current += give
+			var was_done = obj.done
 			obj.done = obj.current >= obj.required
 			delivered.append(obj.name + " x" + str(give))
+			if obj.done and not was_done:
+				objective_completed.emit(obj_id)
 
 	_check_all_complete()
 	quest_updated.emit()
@@ -50,8 +57,11 @@ func deliver_items() -> Array[String]:
 func complete_campfire():
 	if not quest_active:
 		return
+	var was_done = objectives.campfire.done
 	objectives.campfire.current = 1
 	objectives.campfire.done = true
+	if not was_done:
+		objective_completed.emit("campfire")
 	_check_all_complete()
 	quest_updated.emit()
 
@@ -61,6 +71,9 @@ func _check_all_complete():
 			quest_complete = false
 			return
 	quest_complete = true
+	if not _finished_emitted:
+		_finished_emitted = true
+		quest_finished.emit()
 
 func get_remaining_text() -> String:
 	var parts = []

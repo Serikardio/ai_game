@@ -7,6 +7,7 @@ var player: Node2D = null
 var _heal_accumulator: float = 0.0
 
 func _ready():
+	add_to_group("campfires")
 	player = get_tree().get_first_node_in_group("player")
 
 func _process(delta):

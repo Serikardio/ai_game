@@ -127,17 +127,45 @@ func _ready():
 	# Подключаем ИИ-сервис
 	AIService.response_received.connect(_on_ai_response)
 
+	# Сюжет: спутник вспоминает прошлое по мере выполнения целей
+	QuestManager.objective_completed.connect(_on_story_objective)
+
+
+# Обрывки воспоминаний спутника — по одной на каждую сданную цель
+const STORY_MEMORIES = {
+	"gold_block": "Золото... Я помню, как нёс его сюда. Руки дрожали. Я был так близко.",
+	"stone_block": "Эти камни я уже складывал. Очень давно. Кажется, целую вечность назад.",
+	"wood": "Запах дыма... Я был здесь не один тогда. Так же, как ты сейчас не один.",
+	"campfire": "Костёр горит, как в тот раз. Только рядом со мной тогда никого не осталось...",
+}
+
+func _on_story_objective(obj_id: String):
+	var line = STORY_MEMORIES.get(obj_id, "")
+	if line != "":
+		# Небольшая задержка, чтобы реплика не накладывалась на реакцию тотема
+		await get_tree().create_timer(1.2).timeout
+		show_chat_message(line, 5.0)
+
 # --- Navigation helper ---
 
 func _navigate_to(target_pos: Vector2, speed: float = SPEED) -> Vector2:
 	nav_agent.target_position = target_pos
-	if nav_agent.is_navigation_finished():
+
+	var to_target = target_pos - global_position
+	# Уже на месте — стоим
+	if to_target.length() <= nav_agent.target_desired_distance:
 		return Vector2.ZERO
-	var next_pos = nav_agent.get_next_path_position()
-	var dir = global_position.direction_to(next_pos)
-	if dir.length() < 0.01:
-		return Vector2.ZERO
-	return dir * speed
+
+	# Пробуем идти по навигационной сетке
+	if not nav_agent.is_navigation_finished():
+		var next_pos = nav_agent.get_next_path_position()
+		var dir = global_position.direction_to(next_pos)
+		if dir.length() > 0.01:
+			return dir * speed
+
+	# Сетка не дала движения (нет пути / агент вне меша / путь ещё не построен).
+	# Фоллбэк: идём напрямую к цели. move_and_slide проскользит вдоль стен.
+	return to_target.normalized() * speed
 
 # --- Command System ---
 

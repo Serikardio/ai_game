@@ -96,13 +96,13 @@ func _interact():
 		return
 
 	if QuestManager.quest_complete:
-		_show_message("Вы свободны! Отличная работа!")
+		_show_message("Ритуал свершён. Врата ждут тебя, странник.")
 		return
 
 	# Пробуем принять предметы
 	var delivered = QuestManager.deliver_items()
 	if delivered.size() > 0:
-		_show_message("Принято: " + ", ".join(delivered))
+		_show_message("Дар принят: " + ", ".join(delivered) + ". Огонь ритуала разгорается...")
 	else:
 		_show_message(QuestManager.get_remaining_text())
 

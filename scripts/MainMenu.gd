@@ -12,8 +12,28 @@ func _ready():
 	settings_panel.visible = false
 	# Load saved settings
 	_load_settings()
+	_add_continue_button()
+
+func _add_continue_button():
+	if not SaveManager.has_save():
+		return
+	# Дублируем кнопку (без копирования сигналов!), чтобы стиль/шрифт совпадали,
+	# но не унаследовать подключение _on_play_pressed
+	var btn = $MainButtons/PlayButton.duplicate(DUPLICATE_GROUPS | DUPLICATE_SCRIPTS)
+	btn.name = "ContinueButton"
+	btn.text = "Продолжить"
+	main_buttons.add_child(btn)
+	# Ставим кнопку первой в списке
+	main_buttons.move_child(btn, 0)
+	btn.pressed.connect(_on_continue_pressed)
+
+func _on_continue_pressed():
+	if SaveManager.load_game():
+		get_tree().change_scene_to_file("res://test_word.tscn")
 
 func _on_play_pressed():
+	# Новая игра — сбрасываем состояние, чтобы не утянуть загруженные данные
+	SaveManager.reset_state()
 	get_tree().change_scene_to_file("res://test_word.tscn")
 
 func _on_settings_pressed():
